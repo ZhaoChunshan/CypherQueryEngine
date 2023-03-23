@@ -98,69 +98,86 @@ public:
     BooleanValue(const Value& other);
     ~BooleanValue();
 
-    Type getType();
-    int_64 hashCode();
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+    Value& operator=(const Value& other);
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
 
 };
 
+// Array Type Only used for Storage.
 class IntArray : public Value {
 public:
-    std::vector<int_64> value;
-
     IntArray();
     IntArray(const Value &v);
-    IntArray(const std::vector<uint_64> &int_vec);
+    IntArray(const std::vector<int_64> &int_vec);
     ~IntArray();
 
-    Type getType();
-    int_64 hashCode();
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+    Value& operator=(const Value& other);
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
+
+    void append(int_64 integer);
 };
 
+// Array Type Only used for Storage.
 class FloatArray : public Value {
 public:
-    std::vector<double> value;
     FloatArray();
     FloatArray(const Value &v);
     FloatArray(const std::vector<double> &double_vec);
     ~FloatArray();
 
-    Type getType();
-    int_64 hashCode();
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+    Value& operator=(const Value& other);
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
+
+    void append(double _float);
 
 };
 
+// Array Type Only used for Storage.
 class StringArray : public Value {
 public:
-    std::vector<std::string> value;
     StringArray();
     StringArray(const Value &v);
     StringArray(const std::vector<std::string> &string_vec);
     ~StringArray();
 
-    Type getType();
-    int_64 hashCode();
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+    Value& operator=(const Value& other);
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
+
+    void append(const std::string &str);
 };
 
+// Array Type Only used for Storage.
 class BooleanArray : public Value {
 public:
-    std::vector<bool> value;
     BooleanArray();
     BooleanArray(const std::vector<bool> &bool_vec);
     BooleanArray(const Value &other);
     ~BooleanArray();
 
-    Type getType();
-    int_64 hashCode();
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+    Value& operator=(const Value& other);
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
+
+    void append(bool b);
 };
 
 
