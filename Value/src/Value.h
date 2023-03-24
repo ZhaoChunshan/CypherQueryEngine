@@ -26,11 +26,7 @@ public:
         std::vector<bool> *BooleanArray;
         uint_64 Node;
         uint_64 Edge;
-        struct {
-            std::vector<uint_64>* edgeId;
-            std::vector<uint_64>* nodeId;
-        }Path;
-
+        std::vector<uint_64>* Path;
         std::vector<Value *> *List;
         std::map<std::string, Value *> *Map;
     }data;
@@ -183,84 +179,95 @@ public:
 
 class Node : public Value {
 public:
-    uint_64 id;
     Node();
     Node(uint_64 nodeId);
     Node(const Value& other);
     ~Node();
 
-    Type getType();
-    int_64 hashCode();
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+    Value& operator=(const Value& other);
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
 };
 
 class Edge : public Value {
 public:
-    uint_64 id;
     Edge();
     Edge(uint_64 edgeId);
     Edge(const Value& other);
     ~Edge();
 
-    Type getType();
-    int_64 hashCode();
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+    Value& operator=(const Value& other);
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
 };
 
 class Path : public Value {
 public:
-    std::vector<uint_64> edgeId;    // length of n
-    std::vector<uint_64> nodeId;    // length of n + 1
     Path();
     Path(const Value &other);
     Path(const std::vector<uint_64> &_edge_id, const std::vector<uint_64> &_node_id);
     ~Path();
 
-    Type getType();
-    int_64 hashCode();
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+    Value& operator=(const Value& other);
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
 };
 
 class List : public Value {
 public:
-    std::vector<Value *> values;
-
     List();
     List(const Value &other);
     ~List();
 
-    Type getType();
-    int_64 hashCode();
     Value& operator=(const Value& other);
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
+
+    bool canConvertIntArray();
+    bool canConvertFloatArray();
+    bool canConvertStringArray();
+    bool canConvertBooleanArray();
 };
 
 class Map : public Value {
 public:
-    std::map<std::string, Value *> mp;
-
     Map();
     Map(const Value &other);
     ~Map();
 
-    Type getType();
-    int_64 hashCode();
     Value& operator=(const Value& other);
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
 };
 
 class NoValue : public Value {
+public:
     NoValue();
     ~NoValue();
     
-    Type getType();
-    int_64 hashCode();
     Value& operator=(const Value& other);
-    bool operator==(const Value& other);    // check equivalence for DISTINCT
-    bool operator<(const Value& other);     // used for ORDER BY
+
+    Type getType() const;
+    int_64 hashCode() const;
+    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator<(const Value& other) const;     // used for ORDER BY
 };
+
+/* helper functions */
+
+Value * ValueDeepCopy(const Value *value);

@@ -1,6 +1,7 @@
 #include "Value.h"
 #include <cassert>
 #include <math.h>
+#include <set>
 using namespace std;
 
 /* Class: Value */
@@ -536,3 +537,542 @@ void StringArray::append(const std::string &str){
 }
 
 /* Class: BooleanArray */
+
+BooleanArray::BooleanArray(){
+    data.BooleanArray = new vector<bool>();
+}
+
+BooleanArray::BooleanArray(const std::vector<bool> &bool_vec){
+    data.BooleanArray = new vector<bool>();
+    for(bool b : bool_vec){
+        data.BooleanArray->emplace_back(b);
+    }
+}
+
+/**
+ * @param other: BooleanArray, or List of boolean
+*/
+BooleanArray::BooleanArray(const Value &other){
+    data.BooleanArray = new vector<bool>();
+    Type ty = other.getType();
+    if(ty == BOOLEAN_ARRAY){
+        for(bool b : *other.data.BooleanArray){
+            data.BooleanArray->push_back(b);
+        }
+    } else if(ty == LIST){
+        for(Value *elem : *other.data.List){
+            if(elem->getType() == BOOLEAN){
+                data.BooleanArray->push_back(elem->data.Boolean);
+            }else{
+                delete data.BooleanArray;
+                assert(false);
+            }
+        }
+    }
+}
+
+BooleanArray::~BooleanArray(){
+    if(data.BooleanArray != nullptr)
+        delete data.BooleanArray;
+}
+
+/**
+ * @param other: BooleanArray, or List of boolean
+*/
+Value& BooleanArray::operator=(const Value& other){
+    Type ty = other.getType();
+    if(ty == BOOLEAN_ARRAY){
+        if(this == &other) return *this;
+        data.BooleanArray->clear();
+        for(bool b : *other.data.BooleanArray){
+            data.BooleanArray->push_back(b);
+        }
+    } else if(ty == LIST){
+        data.BooleanArray->clear();
+        for(Value *elem : *other.data.List){
+            if(elem->getType() == BOOLEAN){
+                data.BooleanArray->push_back(elem->data.Boolean);
+            }else{
+                assert(false);
+            }
+        }
+    }
+}
+
+Value::Type BooleanArray::getType() const{
+    return BOOLEAN_ARRAY;
+}
+
+/* Array Type only used for storage */
+int_64 BooleanArray::hashCode() const{
+    assert(false);
+    return 0;
+}
+
+/* Array Type only used for storage */
+bool BooleanArray::operator==(const Value& other) const{
+    assert(false);
+    return true;
+}
+
+/* Array Type only used for storage */
+bool BooleanArray::operator<(const Value& other) const{
+    assert(false);
+    return true;
+}
+
+void BooleanArray::append(bool b){
+    data.BooleanArray->push_back(b);
+}
+
+/* Class: Node */
+
+Node::Node(){
+
+}
+
+Node::Node(uint_64 nodeId){
+    data.Node = nodeId;
+}
+
+Node::Node(const Value& other){
+    assert(other.getType() == NODE);
+    data.Node = other.data.Node;
+} 
+
+Node::~Node(){
+
+}
+
+Value& Node::operator=(const Value& other){
+    assert(other.getType() == NODE);
+    data.Node = other.data.Node;
+    return *this;
+}
+
+Value::Type Node::getType() const{
+    return NODE;
+}
+
+int_64 Node::hashCode() const{
+    return data.Node & (0x7FFFFFFFFFFFFFFF);
+}
+
+bool Node::operator==(const Value& other) const{
+    return other.getType() == NODE && other.data.Node == data.Node;
+}
+
+bool Node::operator<(const Value& other) const{
+    Type ty = other.getType();
+    if(ty == MAP){
+        return false;
+    } else if(ty == NODE){
+        return data.Node < other.data.Node;
+    } else {
+        return true;
+    }
+}
+
+/* Class: Edge */
+
+Edge::Edge(){
+
+}
+
+Edge::Edge(uint_64 edgeId){
+    data.Edge = edgeId;
+}
+
+Edge::Edge(const Value& other){
+    assert(other.getType() == EDGE);
+    data.Edge = other.data.Edge;
+}
+
+Edge::~Edge(){
+
+}
+
+Value& Edge::operator=(const Value& other){
+    assert(other.getType() == EDGE);
+    data.Edge = other.data.Edge;
+}
+
+Value::Type Edge::getType() const{
+    return EDGE;
+}
+
+int_64 Edge::hashCode() const{
+    return data.Edge & (0x7FFFFFFFFFFFFFFF);
+}
+
+bool Edge::operator==(const Value& other) const{
+    return other.getType() == EDGE && data.Edge == other.data.Edge;
+}
+
+bool Edge::operator<(const Value& other) const{
+    Type ty = other.getType();
+    if(ty == MAP || ty == NODE){
+        return false;
+    } else if(ty == EDGE){
+        return data.Edge < other.data.Edge;
+    } else {
+        return true;
+    }
+}
+
+/* Class: Path */
+
+Path::Path(){
+    data.Path = new vector<uint_64>();
+}
+
+Path::Path(const Value &other){
+    assert(other.getType() == PATH);
+    data.Path = new vector<uint_64>();
+    for(auto uint_ : *other.data.Path){
+        data.Path->push_back(uint_);
+    }
+}
+
+Path::Path(const std::vector<uint_64> &_edge_id, const std::vector<uint_64> &_node_id){
+    assert(_edge_id.size() + 1 == _node_id.size());
+    data.Path = new vector<uint_64>();
+    uint_64 n = _edge_id.size();
+    for(int i = 0; i < n; ++i){
+        data.Path->push_back(_node_id[i]);
+        data.Path->push_back(_edge_id[i]);
+    }
+    data.Path->push_back(_node_id[n]);
+}
+
+Path::~Path(){
+    if(data.Path != nullptr)
+        delete data.Path;
+}
+
+/* Class: List */
+
+List::List(){
+    data.List = new vector<Value *>();
+}
+
+/**
+ * Construct a List from other List or Array.
+ * @param other: List or [Boolean|Int|Float|String] Array 
+ * 
+*/
+List::List(const Value &other){
+    data.List = new vector<Value *>();
+    Type ty = other.getType();
+    if(ty == LIST){
+        for(Value *elem : *other.data.List){
+            Type elem_ty = elem->getType();
+            Value *new_elem = ValueDeepCopy(elem);
+            data.List->push_back(new_elem);
+        }
+    } else if(ty == INTEGER_ARRAY){
+        for(auto int_ : *other.data.IntArray){
+            data.List->push_back(new IntValue(int_));
+        }
+    } else if(ty == FLOAT_ARRAY){
+        for(auto d : *other.data.FloatArray){
+            data.List->push_back(new FloatValue(d));
+        }
+    } else if(ty == STRING_ARRAY){
+        for(const string& s : *other.data.StringArray){
+            data.List->push_back(new StringValue(s));
+        }
+    }else if(ty == BOOLEAN_ARRAY){
+        for(bool b : *other.data.BooleanArray){
+            data.List->push_back(new BooleanValue(b));
+        }
+    }
+}
+
+List::~List(){
+    if(data.List != nullptr){
+        for(Value *v : *data.List){
+            if(v != nullptr)
+                delete v;
+        }
+        delete data.List;
+    }
+}
+
+/**
+ * Construct a List from other List or Array.
+ * @param other: List or [Boolean|Int|Float|String] Array 
+ * 
+*/
+Value& List::operator=(const Value& other){
+    if(this == &other) return *this;
+    for(Value *v : *data.List){
+        if(v != nullptr)
+            delete v;
+    }
+    data.List->clear();
+    Type ty = other.getType();
+    if(ty == LIST){
+        for(Value *elem : *other.data.List){
+            Type elem_ty = elem->getType();
+            Value *new_elem = ValueDeepCopy(elem);
+            data.List->push_back(new_elem);
+        }
+    } else if(ty == INTEGER_ARRAY){
+        for(auto int_ : *other.data.IntArray){
+            data.List->push_back(new IntValue(int_));
+        }
+    } else if(ty == FLOAT_ARRAY){
+        for(auto d : *other.data.FloatArray){
+            data.List->push_back(new FloatValue(d));
+        }
+    } else if(ty == STRING_ARRAY){
+        for(const string& s : *other.data.StringArray){
+            data.List->push_back(new StringValue(s));
+        }
+    }else if(ty == BOOLEAN_ARRAY){
+        for(bool b : *other.data.BooleanArray){
+            data.List->push_back(new BooleanValue(b));
+        }
+    }
+    return *this;
+}
+
+Value::Type List::getType() const{
+    return LIST;
+}
+
+int_64 List::hashCode() const{
+    int_64 seed = 131; // 31 131 1313 13131 131313 etc..
+    int_64 hash = 0;
+    uint_64 l = data.List->size();
+    // l = l > 100 ? 100 : l;
+    for(uint_64 i = 0; i < l; ++i){
+        hash = hash * seed + data.List->at(i)->hashCode();
+    }
+    return (hash & 0x7FFFFFFFFFFFFFFF);
+}
+
+bool List::operator==(const Value& other) const{
+    uint_64 n = data.List->size();
+    if(other.data.List->size() != n){
+        return false;
+    }
+    for(uint_64 i = 0; i < n; ++i){
+        if( !( *other.data.List->at(i) == *data.List->at(i) ) ){
+            return false;
+        }
+    }
+    return true;
+}
+
+bool List::operator<(const Value& other) const{
+    Type ty = other.getType();
+    if(ty == MAP || ty == NODE || ty == EDGE){
+        return false;
+    } else if(ty != LIST){
+        return true;
+    }
+    // ty is LIST
+    uint_64 m = data.List->size(), n = other.data.List->size();
+    uint_64 l = m > n ? n : m;
+    for(uint_64 i = 0; i < l; ++i){
+        if(*data.List->at(i) == *other.data.List->at(i)){
+            continue;
+        }
+        return *data.List->at(i) < *other.data.List->at(i);
+    }
+    return m < n;
+}
+
+
+bool List::canConvertIntArray(){
+    for(Value *v : *data.List){
+        if(v->getType() != INTEGER)
+            return false;
+    }
+    return true;
+}
+
+bool List::canConvertFloatArray(){
+    for(Value *v : *data.List){
+        if(v->getType() != INTEGER && v->getType() != FLOAT)
+            return false;
+    }
+    return true;
+}
+
+bool List::canConvertStringArray(){
+    for(Value *v : *data.List){
+        if(v->getType() != STRING)
+            return false;
+    }
+    return true;
+}
+
+bool List::canConvertBooleanArray(){
+    for(Value *v : *data.List){
+        if(v->getType() != BOOLEAN)
+            return false;
+    }
+    return true;
+}
+
+/* Class: Map */
+
+Map::Map(){
+    data.Map = new map<string, Value *>();
+}
+
+Map::Map(const Value &other){
+    assert(other.getType() == MAP);
+    data.Map = new map<string, Value *>();
+    for(const auto &p : *other.data.Map){
+        data.Map->insert(make_pair(p.first,ValueDeepCopy(p.second)));
+    }
+}
+
+Map::~Map(){
+    if(data.Map != nullptr){
+        for(const auto &p : *data.Map){
+            if(p.second != nullptr)
+                delete p.second;
+        }
+    }
+    delete data.Map;
+}
+
+Value& Map::operator=(const Value& other){
+    assert(other.getType( ) == MAP);
+    if(this == &other) return *this;
+    if(data.Map != nullptr){
+        for(const auto &p : *data.Map){
+            if(p.second != nullptr)
+                delete p.second;
+        }
+    }
+    data.Map->clear();
+    for(const auto &p : *other.data.Map){
+        data.Map->insert(make_pair(p.first,ValueDeepCopy(p.second)));
+    }
+    return *this;
+}
+
+Value::Type Map::getType() const{
+    return MAP;
+}
+
+int_64 Map::hashCode() const{
+    int_64 seed = 131; // 31 131 1313 13131 131313 etc..
+    int_64 hash = 0;
+    for(const auto &p : *data.Map){
+        StringValue s(p.first);
+        hash = hash * seed + s.hashCode();
+        hash = hash * seed + p.second->hashCode();
+    }
+    return (hash & 0x7FFFFFFFFFFFFFFF);
+}
+
+bool Map::operator==(const Value& other) const{
+    uint_64 m = data.Map->size(), n = other.data.Map->size();
+    if(m != n) {
+        return false;
+    }
+    for(const auto &p : *data.Map){
+        const string & k = p.first;
+        Value *v = p.second;
+        if(other.data.Map->find(k) == other.data.Map->end() ||
+            !(*other.data.Map->at(k) == *v) ){
+                return false;
+        }
+    }
+    return true;
+}
+
+/* Not defined yet */
+bool Map::operator<(const Value& other) const{
+    return false;
+}
+
+/* Class: NoValue */
+
+NoValue::NoValue(){
+
+}
+
+NoValue::~NoValue(){
+
+}
+
+Value& NoValue::operator=(const Value& other){
+    assert(other.getType() == NO_VALUE);
+    return *this;
+}
+
+Value::Type NoValue::getType() const{
+    return NO_VALUE;
+}
+int_64 NoValue::hashCode() const{
+    return 2; // TODO
+}
+
+bool NoValue::operator==(const Value& other) const{
+    return other.getType() == NO_VALUE;
+}
+
+bool NoValue::operator<(const Value& other) const{
+    return false;    
+}
+
+Value * ValueDeepCopy(const Value *value){
+    Value::Type ty = value->getType();
+    Value *new_elem = nullptr;
+    switch (ty)
+    {
+        case Value::INTEGER:
+            new_elem = new IntValue(*value);
+            break;
+        case Value::FLOAT:
+            new_elem = new FloatValue(*value);
+            break;
+        case Value::STRING:
+            new_elem = new StringValue(*value);
+            break;
+        case Value::BOOLEAN:
+            new_elem = new BooleanValue(*value);
+            break;
+        case Value::INTEGER_ARRAY:
+            new_elem = new IntArray(*value);
+            break;
+        case Value::FLOAT_ARRAY:
+            new_elem = new FloatArray(*value);
+            break;
+        case Value::STRING_ARRAY: 
+            new_elem = new StringArray(*value);
+            break;
+        case Value::BOOLEAN_ARRAY:
+            new_elem = new BooleanArray(*value);
+            break;
+        case Value::BYTE_ARRAY:
+            assert(false);  // Not implement
+        case Value::NODE:
+            new_elem = new Node(*value);
+            break;
+        case Value::EDGE:
+            new_elem = new Edge(*value);
+            break;
+        case Value::PATH:
+            new_elem = new Path(*value);
+            break;
+        case Value::LIST:
+            new_elem = new List(*value);
+            break;
+        case Value::MAP:
+            new_elem = new Map(*value);
+            break;
+        case Value::NO_VALUE:
+            new_elem = new NoValue();
+            break;
+    }
+    return new_elem;
+}
