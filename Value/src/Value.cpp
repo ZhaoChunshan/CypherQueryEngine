@@ -2,6 +2,8 @@
 #include <cassert>
 #include <math.h>
 #include <set>
+#include <sstream>
+#include <iostream>
 using namespace std;
 
 /* Class: Value */
@@ -50,7 +52,8 @@ int_64 IntValue::hashCode() const {
 }
 
 bool IntValue::operator==(const Value& other) const {
-    return other.getType() == INTEGER && data.Int == other.data.Int;
+    return other.getType() == INTEGER && data.Int == other.data.Int ||
+        other.getType() == FLOAT && data.Int == other.data.Float;
 }
 
 bool IntValue::operator<(const Value& other) const {
@@ -68,6 +71,10 @@ bool IntValue::operator<(const Value& other) const {
     } else {
         return false;
     }
+}
+
+std::string IntValue::toString() const{
+    return to_string(data.Int);
 }
 
 /* Class: FloatValue */
@@ -146,6 +153,10 @@ bool FloatValue::operator<(const Value& other) const{
     }
 }
 
+std::string FloatValue::toString() const{
+    return to_string(data.Float);
+}   
+
 /* Class: StringValue */
 
 StringValue::StringValue(){
@@ -204,6 +215,11 @@ bool StringValue::operator<(const Value& other) const{
     }
 }
 
+std::string StringValue::toString() const{
+    return *data.String;
+}   
+
+
 /* Class: BooleanValue */
 
 BooleanValue::BooleanValue(){
@@ -250,6 +266,10 @@ bool BooleanValue::operator<(const Value& other) const{
     } else {
         return data.Boolean ? false : other.data.Boolean;
     }
+}
+
+std::string BooleanValue::toString() const{
+    return data.Boolean ? "true":"false";
 }
 
 /* Class: IntArray */
@@ -346,6 +366,12 @@ bool IntArray::operator<(const Value& other) const{
 
 void IntArray::append(int_64 integer){
     data.IntArray->push_back(integer);
+}
+
+std::string IntArray::toString() const{
+    stringstream buf;
+    buf << "IntArray(length: " << data.IntArray->size() <<")";
+    return buf.str();
 }
 
 /* Class: FloatArray */
@@ -450,6 +476,12 @@ void FloatArray::append(double _float){
     data.FloatArray->push_back(_float);
 }
 
+std::string FloatArray::toString() const{
+    stringstream buf;
+    buf << "FloatArray(length: " << data.FloatArray->size() <<")";
+    return buf.str();
+}
+
 /* Class: StringArray */
 
 StringArray::StringArray(){
@@ -531,6 +563,11 @@ bool StringArray::operator==(const Value& other) const{
 bool StringArray::operator<(const Value& other) const{
     assert(false);
     return false;
+}
+std::string StringArray::toString() const{
+    stringstream buf;
+    buf << "StringArray(length: " << data.StringArray->size() <<")";
+    return buf.str();
 }
 void StringArray::append(const std::string &str){
     data.StringArray->emplace_back(str);
@@ -621,6 +658,12 @@ bool BooleanArray::operator<(const Value& other) const{
     return true;
 }
 
+std::string BooleanArray::toString() const{
+    stringstream buf;
+    buf << "BooleanArray(length: " << data.BooleanArray->size() <<")";
+    return buf.str();
+}
+
 void BooleanArray::append(bool b){
     data.BooleanArray->push_back(b);
 }
@@ -673,6 +716,12 @@ bool Node::operator<(const Value& other) const{
     }
 }
 
+std::string Node::toString() const{
+    stringstream buf;
+    buf << "Node" <<"(" << data.Node <<")";
+    return buf.str();
+}
+
 /* Class: Edge */
 
 Edge::Edge(){
@@ -720,34 +769,138 @@ bool Edge::operator<(const Value& other) const{
     }
 }
 
+std::string Edge::toString() const{
+    stringstream buf;
+    buf << "Edge" <<"(" << data.Edge <<")";
+    return buf.str();
+}
+
 /* Class: Path */
 
 Path::Path(){
-    data.Path = new vector<uint_64>();
+    data.Path = new PathContent();
 }
 
 Path::Path(const Value &other){
     assert(other.getType() == PATH);
-    data.Path = new vector<uint_64>();
-    for(auto uint_ : *other.data.Path){
-        data.Path->push_back(uint_);
+    data.Path = new PathContent();
+    for(auto uint_ : other.data.Path->edgeId){
+        data.Path->edgeId.push_back(uint_);
+    }
+    for(auto uint_ : other.data.Path->nodeId){
+        data.Path->nodeId.push_back(uint_);
+    }
+    for(auto ty : other.data.Path->edgeType){
+        data.Path->edgeType.push_back(ty);
     }
 }
 
-Path::Path(const std::vector<uint_64> &_edge_id, const std::vector<uint_64> &_node_id){
+Path::Path(const std::vector<uint_64> &_edge_id, const std::vector<uint_64> &_node_id, const std::vector<EdgeType> &_edge_type){
+    cout << "In Path";
     assert(_edge_id.size() + 1 == _node_id.size());
-    data.Path = new vector<uint_64>();
+    data.Path = new PathContent();
     uint_64 n = _edge_id.size();
     for(int i = 0; i < n; ++i){
-        data.Path->push_back(_node_id[i]);
-        data.Path->push_back(_edge_id[i]);
+        data.Path->nodeId.push_back(_node_id[i]);
+        data.Path->edgeId.push_back(_edge_id[i]);
+        data.Path->edgeType.push_back(_edge_type[i]);
     }
-    data.Path->push_back(_node_id[n]);
+    data.Path->nodeId.push_back(_node_id[n]);
+    cout << "OUT P";
 }
 
 Path::~Path(){
     if(data.Path != nullptr)
         delete data.Path;
+}
+
+Value& Path::operator=(const Value& other){
+    cout << "IN OP =";
+    if(&other == this) return *this;
+    assert(other.getType() == PATH);
+    data.Path->edgeId.clear();
+    data.Path->nodeId.clear();
+    data.Path->edgeType.clear();
+
+    for(auto uint_ : other.data.Path->edgeId){
+        data.Path->edgeId.push_back(uint_);
+    }
+    for(auto uint_ : other.data.Path->nodeId){
+        data.Path->nodeId.push_back(uint_);
+    }
+    for(auto ty : other.data.Path->edgeType){
+        data.Path->edgeType.push_back(ty);
+    }
+    cout << "OUT OP =";
+    return *this;
+}
+
+Value::Type Path::getType() const{
+    return PATH;
+}
+
+int_64 Path::hashCode() const{
+    int_64 seed = 131; // 31 131 1313 13131 131313 etc..
+    int_64 hash = 0;
+    uint_64 l = data.Path->edgeId.size();
+    // l = l > 100 ? 100 : l;
+    for(uint_64 i = 0; i < l; ++i){
+        hash = hash * seed + (data.Path->nodeId[i]);
+        hash = hash * seed + (data.Path->edgeId[i]);
+    }
+    hash = hash * seed + (data.Path->nodeId[l]);
+    return (hash & 0x7FFFFFFFFFFFFFFF);
+}   
+
+bool Path::operator==(const Value& other) const{
+    assert(other.getType() == PATH);
+    if(other.data.Path->edgeId.size() != data.Path->edgeId.size()) return false;
+    uint_64 n = data.Path->edgeId.size();
+    bool flag = true;
+
+    for(int i = 0; i < n; ++i){
+        if(other.data.Path->edgeId[i] != data.Path->edgeId[i] || 
+           other.data.Path->edgeType[i] != data.Path->edgeType[i] ||
+           other.data.Path->nodeId[i] != data.Path->nodeId[i]){
+            flag = false;
+            break;
+        }
+    }
+    if(other.data.Path->nodeId[n] != data.Path->nodeId[n])
+        flag = false;
+    if(flag)
+        return true;
+    
+    for(int i = 0; i < n; ++i){
+        if(other.data.Path->edgeId[i] != data.Path->edgeId[n - i - 1] || 
+           other.data.Path->edgeType[i] != data.Path->edgeType[n - i - 1] ||
+           other.data.Path->nodeId[i] != data.Path->nodeId[n - i]){
+            flag = false;
+            break;
+        }
+    }
+    if(other.data.Path->nodeId[n] != data.Path->nodeId[0])
+        flag = false;
+    return flag;
+}
+
+bool Path::operator<(const Value& other) const{
+    int m = data.Path->edgeId.size(), n = other.data.Path->edgeId.size();
+    int l = m < n ? m : n;
+    for(int i = 0; i < l; ++i){
+        if(data.Path->nodeId[i] != other.data.Path->nodeId[i]) 
+        return data.Path->nodeId[i] < other.data.Path->nodeId[i];
+        if(data.Path->edgeId[i] != other.data.Path->edgeId[i]) continue;
+        return data.Path->edgeId[i] < other.data.Path->edgeId[i];
+    }
+    if(data.Path->nodeId[l] != other.data.Path->nodeId[l])
+        return data.Path->nodeId[l] < other.data.Path->nodeId[l];
+    return m < n;
+}
+
+std::string Path::toString() const{
+    stringstream buf;
+    return buf.str();
 }
 
 /* Class: List */
@@ -885,6 +1038,19 @@ bool List::operator<(const Value& other) const{
     return m < n;
 }
 
+std::string List::toString() const{
+    stringstream buf;
+    buf << "[ ";
+    for(Value *v : *data.List){
+        buf << v->toString() << ", ";
+    }
+    buf << "]";
+    return buf.str();
+}
+
+void List::append(const Value&other) {
+    data.List->push_back(ValueDeepCopy(&other));
+}
 
 bool List::canConvertIntArray(){
     for(Value *v : *data.List){
@@ -994,6 +1160,28 @@ bool Map::operator<(const Value& other) const{
     return false;
 }
 
+std::string Map::toString() const{
+    stringstream buf;
+    buf << "{ ";
+    for(const auto &p : *data.Map){
+        buf << p.first << ": ";
+        buf << p.second->toString() << ", ";
+    }
+    buf << "}";
+    return buf.str();
+}
+
+void Map::insert(const std::string &k, const Value &v){
+    map<string, Value*>::iterator it = data.Map->find(k);
+    if(it == data.Map->end()){
+        data.Map->insert(make_pair(k, ValueDeepCopy(&v)));
+    }else{
+        it->second = ValueDeepCopy(&v);
+    }
+    return;
+}
+
+
 /* Class: NoValue */
 
 NoValue::NoValue(){
@@ -1022,6 +1210,10 @@ bool NoValue::operator==(const Value& other) const{
 
 bool NoValue::operator<(const Value& other) const{
     return false;    
+}
+
+std::string NoValue::toString() const{
+    return "null";
 }
 
 Value * ValueDeepCopy(const Value *value){

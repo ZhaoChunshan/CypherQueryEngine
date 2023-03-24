@@ -1,9 +1,15 @@
+/**
+ * 所有的值都组织为Value。
+ * 一切赋值，构造都是深拷贝。
+*/
+
 #include <string>
 #include <map>
 #include <vector>
 typedef long long int_64;
 typedef unsigned long long uint_64;
 typedef unsigned char byte;
+
 
 class Value {
 public:
@@ -15,6 +21,17 @@ public:
         LIST, MAP,
         NO_VALUE   // Cypher null
     };
+    
+    enum EdgeType{
+        LEFT_EDGE, RIGHT_EDGE, UNDIRECTED
+    };
+
+    struct PathContent{
+        std::vector<EdgeType> edgeType;
+        std::vector<uint_64> edgeId;
+        std::vector<uint_64> nodeId;
+    };
+
     union ValueUnion{
         int_64 Int;
         double Float;
@@ -26,20 +43,23 @@ public:
         std::vector<bool> *BooleanArray;
         uint_64 Node;
         uint_64 Edge;
-        std::vector<uint_64>* Path;
+        PathContent *Path;
         std::vector<Value *> *List;
         std::map<std::string, Value *> *Map;
     }data;
 
-    virtual Value& operator=(const Value& other);
+    Value(){}
+    virtual ~Value() {}
 
     bool isNull() const;
     bool storable() const;
 
-    virtual Type getType() const;
-    virtual int_64 hashCode() const;
-    virtual bool operator==(const Value& other) const;    // check equivalence for DISTINCT
-    virtual bool operator<(const Value& other) const;     // used for ORDER BY
+    virtual Type getType() const = 0;
+    virtual int_64 hashCode() const = 0;
+    virtual bool operator==(const Value& other) const = 0;    // check equivalence for DISTINCT
+    virtual bool operator<(const Value& other) const = 0;     // used for ORDER BY
+
+    virtual std::string toString() const = 0;
 };
 
 class IntValue : public Value{
@@ -49,12 +69,13 @@ public:
     IntValue(const Value& other);
     ~IntValue();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
-    bool operator==(const Value& other) const;    // check equivalence for DISTINCT
+    bool operator==(const Value & other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY 
+    std::string toString() const;
 };
 
 class FloatValue : public Value {
@@ -64,12 +85,14 @@ public:
     FloatValue(const Value &other);
     ~FloatValue();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY 
+
+    std::string toString() const;
 };
 
 class StringValue : public Value {
@@ -79,12 +102,14 @@ public:
     StringValue(const Value& other);
     ~StringValue();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY 
+
+    std::string toString() const;
 };
 
 class BooleanValue : public Value {
@@ -94,13 +119,14 @@ public:
     BooleanValue(const Value& other);
     ~BooleanValue();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
 
+    std::string toString() const;
 };
 
 // Array Type Only used for Storage.
@@ -111,12 +137,13 @@ public:
     IntArray(const std::vector<int_64> &int_vec);
     ~IntArray();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
 
     void append(int_64 integer);
 };
@@ -129,12 +156,13 @@ public:
     FloatArray(const std::vector<double> &double_vec);
     ~FloatArray();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
 
     void append(double _float);
 
@@ -148,12 +176,13 @@ public:
     StringArray(const std::vector<std::string> &string_vec);
     ~StringArray();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
 
     void append(const std::string &str);
 };
@@ -166,12 +195,13 @@ public:
     BooleanArray(const Value &other);
     ~BooleanArray();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
 
     void append(bool b);
 };
@@ -184,12 +214,14 @@ public:
     Node(const Value& other);
     ~Node();
 
-    Value& operator=(const Value& other);
+    Value& operator=(Value const&  other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
+
 };
 
 class Edge : public Value {
@@ -199,27 +231,29 @@ public:
     Edge(const Value& other);
     ~Edge();
 
-    Value& operator=(const Value& other);
+    Value& operator=( Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
 };
 
 class Path : public Value {
 public:
     Path();
     Path(const Value &other);
-    Path(const std::vector<uint_64> &_edge_id, const std::vector<uint_64> &_node_id);
+    Path(const std::vector<uint_64> &_edge_id, const std::vector<uint_64> &_node_id, const std::vector<EdgeType> &_edge_type);
     ~Path();
 
-    Value& operator=(const Value& other);
+    Value& operator=( Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
 };
 
 class List : public Value {
@@ -228,17 +262,21 @@ public:
     List(const Value &other);
     ~List();
 
-    Value& operator=(const Value& other);
+    Value& operator=( Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
+
+    void append(const Value&other);
 
     bool canConvertIntArray();
     bool canConvertFloatArray();
     bool canConvertStringArray();
     bool canConvertBooleanArray();
+    
 };
 
 class Map : public Value {
@@ -247,12 +285,15 @@ public:
     Map(const Value &other);
     ~Map();
 
-    Value& operator=(const Value& other);
+    Value& operator=( Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
+
+    void insert(const std::string &k, const Value &v);
 };
 
 class NoValue : public Value {
@@ -260,12 +301,13 @@ public:
     NoValue();
     ~NoValue();
     
-    Value& operator=(const Value& other);
+    Value& operator=( Value const& other);
 
     Type getType() const;
     int_64 hashCode() const;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
     bool operator<(const Value& other) const;     // used for ORDER BY
+    std::string toString() const;
 };
 
 /* helper functions */
