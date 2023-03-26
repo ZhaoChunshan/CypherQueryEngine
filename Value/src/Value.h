@@ -46,8 +46,10 @@ public:
         PathContent *Path;
         std::vector<Value *> *List;
         std::map<std::string, Value *> *Map;
-    }data;
+    };
 
+    Type type_;
+    ValueUnion data_;
     Value(){}
     virtual ~Value() {}
 
