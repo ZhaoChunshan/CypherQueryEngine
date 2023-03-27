@@ -1,6 +1,12 @@
 /**
- * 所有的值都组织为Value。
- * 一切赋值，构造都是深拷贝。
+ * 所有的值都组织为Value。 一切赋值，构造都是深拷贝。
+ * 警告：
+ * (1)重载的'<'运算符，适用于order by的排序，和表达式中比较大小的'<'不是同一概念
+ * (2)重载的'=='运算符，适用于Distinct，Groupby，而不适用与表达式的相等‘=’
+ * (3) '<'号中，不支持Map之间的比较（Cypher规范未定义），但'=='支持Map之间的相等判断
+ * (4) order by排序，用<即可
+ * (5) Distinct，可以先排序再去重，但注意Map之间的去重，只能用暴力的(n^2)的方法，因为Map上没定义'<'关系。
+ * (6) hashCode函数暂时保留接口，不用！因为有些古怪。(Map, null, 以及浮点与整形相等...)
 */
 
 #include <string>
@@ -136,13 +142,6 @@ private:
 
     /* destruct functions */
     void Destruct();
-    void DestructString();
-    void DestructPath();
-    void DestructList();
-    void DestructMap();
-
-    
-
 };
 
 
