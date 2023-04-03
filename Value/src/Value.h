@@ -12,6 +12,8 @@
 #include <string>
 #include <map>
 #include <vector>
+
+namespace PGStore{
 typedef long long int_64;
 typedef unsigned long long uint_64;
 typedef unsigned char byte;
@@ -146,4 +148,4 @@ private:
 
 
 /* helper functions */
-
+}
