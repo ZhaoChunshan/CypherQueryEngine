@@ -2,7 +2,7 @@
 #include <vector>
 #include <map>
 #include <set>
-#include "../../PQuery/Varset.h"
+#include "../PQuery/Varset.h"
 
 namespace GPStore{
     
@@ -88,7 +88,7 @@ public:
     Varset covered_vars_;
     std::vector<unsigned> covered_vars_id_;
     Atom() = default;
-    virtual ~Atom() = 0;
+    virtual ~Atom() = default;
     virtual void encode(const std::map<std::string, unsigned>& var2id) = 0;
     virtual void print(int dep)const = 0;
 };

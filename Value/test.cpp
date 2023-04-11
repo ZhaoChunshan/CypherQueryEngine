@@ -1,6 +1,7 @@
-// g++ -o test test.cpp ../src/Value.cpp -I ../src -std=c++11
+// g++ -o test test.cpp Value.cpp Expression.cpp ../PQuery/Varset.cpp -I ./ -I ../PQuery -std=c++11
 // ./test
-#include "../src/Value.h"
+#include "Value.h"
+#include "Expression.h"
 #include <memory>
 #include <algorithm>
 #include <iostream>
@@ -93,9 +94,23 @@ int test5(){
     return 0;
 }
 
+/* 测试六：表达式 */
+int test6(){
+    GPStore::Expression exp;
+    exp.oprt_ = GPStore::Expression::AND;
+    GPStore::Expression *exp1 = new GPStore::Expression();
+    GPStore::Expression *exp2 = new GPStore::Expression();
+    exp1->atom_ = new GPStore::Variable(string("Var1"));
+    exp2->atom_ = new GPStore::Variable(string("Var2"));
+    exp.children_.push_back(exp1);
+    exp.children_.push_back(exp2);
+    exp.print(0);
+    return 0;
+}
+
 int main(){
-    int (*a[])()  = {test1, test2, test3, test4, test5};
-    for(int i = 0; i < 5; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6};
+    for(int i = 0; i < 6; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {

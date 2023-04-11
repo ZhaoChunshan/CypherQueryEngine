@@ -4,7 +4,7 @@
 /**
  * helper functions
 */
-void GPStore::Expression::printHead(int dep, const char *name, bool colon = true, bool endline = true){
+void GPStore::Expression::printHead(int dep, const char *name, bool colon , bool endline){
     for(int i = 0; i < dep; ++i) printf("\t");
     printf(name);
     colon ? putchar(':') : 0;
@@ -123,6 +123,7 @@ GPStore::Expression& GPStore::Expression::operator=(const Expression& that){
     oprt_ = that.oprt_;
     covered_vars_ = that.covered_vars_;
     covered_vars_id_ = that.covered_vars_id_;
+    return *this;
 }
 
 GPStore::Expression::~Expression(){
@@ -200,6 +201,7 @@ GPStore::AtomPropertyLabels&
 GPStore::AtomPropertyLabels:: operator=(const GPStore::AtomPropertyLabels &that){
     key_names_ = that.key_names_;
     node_labels_ = that.node_labels_;
+    return *this;
 }
 
 void GPStore::AtomPropertyLabels::addKeyName(const std::string &k){
