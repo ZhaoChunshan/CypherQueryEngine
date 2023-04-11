@@ -2,13 +2,14 @@
 #include <vector>
 #include <map>
 #include <set>
+#include "../../PQuery/Varset.h"
 
-class Pattern;
-class PatternPart;
-class QueryTree;
+namespace GPStore{
+    
 class Expression;
 class AtomPropertyLabels;
 class Atom;
+
 /**
  * 表达式类
  * oprt!= EMPTY_OP，则内部结点，关注oprt和children
@@ -36,54 +37,60 @@ public:
         EMPTY_OP    // no op, it's leaf node
     };
 
-    OperatorType oprt;
-	std::vector<Expression *> children;	// children.size()==0 implies it's leaf node(i.e. atom)
-	Atom* atom;
-    AtomPropertyLabels* property_label;
+    OperatorType oprt_;
+	std::vector<Expression *> children_;	// children.size()==0 implies it's leaf node(i.e. atom)
+	Atom* atom_;
+    AtomPropertyLabels* property_label_;
 
     // 变量覆盖集合
-    std::set<std::string> covered_vars;
-    std::set<unsigned long long> covered_vars_id; // 解析完，执行中，给当前的WithBlock中的变量分配的ID。运行中变量的id，并不是sid oid eid这种。
+    Varset covered_vars_;
+    // 解析完，执行中，给当前的WithBlock中的变量分配的ID。运行中变量的id，并不是sid oid eid这种。
+    std::vector<unsigned> covered_vars_id_; 
     
     Expression();
+    Expression(const Expression& that);
+    Expression& operator=(const Expression& that);
     ~Expression();
+    void release();
+    
+    bool isAtom() const;
 
-    bool isLeafNode();
-    void addChildExp(Expression *exp);
-    void setOprt(OperatorType op);
-    void setAtom(Atom *_atom);
-    void setAtomPropLabels(AtomPropertyLabels *apl);
-    static std::string OprtToString(OperatorType op);
-    Expression *deepCopy();
-    void buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id);
+    /* 将表达式树中所有的变量赋予变量的id，同时获得covered_vars_id_ */
+    void encode(const std::map<std::string, unsigned>& var2id);
 
-    void print(int dep);
+    void print(int dep) const;
+
+    
+    /*  helper functions */ 
+    static void printHead(int dep, const char *name, bool colon = true, bool endline = true);
+    static Atom * AtomDeepCopy(Atom *atom);
+    static std::string oprt2String(OperatorType op);
 };
 
 // 属性标签表达式，用于 p.props.age; a:Person 这类表达式
 class AtomPropertyLabels{
 public:
-    std::vector<std::string> key_names;
-    std::vector<std::string> node_labels;
+    std::vector<std::string> key_names_;
+    std::vector<std::string> node_labels_;
     AtomPropertyLabels();
-    AtomPropertyLabels(const AtomPropertyLabels &other);
+    AtomPropertyLabels(const AtomPropertyLabels &that);
+    AtomPropertyLabels& operator=(const AtomPropertyLabels &that);
     void addKeyName(const std::string &k);
     void addNodeLabel(const std::string &l);
-    void print(int dep);
+    void print(int dep) const;
 };
 
 class Atom{
 public:
 	enum AtomType{LITERAL, PARAMETER, CASE_EXPRESSION, COUNT, LIST_COMPREHENSION, PATTERN_COMPREHENSION,
-	QUANTIFIER, PATTERN_PREDICATE, PARENTHESIZED_EXPRESSION, FUNCTION_INVOCATION, EXISTENTIAL_SUBQUERY, VARIABLE};
-	AtomType atom_type;
-    std::set<std::string> covered_vars;
-    std::set<unsigned long long> covered_vars_id;
+	QUANTIFIER, PATTERN_PREDICATE, FUNCTION_INVOCATION, EXISTENTIAL_SUBQUERY, VARIABLE};
+	AtomType atom_type_;
+    Varset covered_vars_;
+    std::vector<unsigned> covered_vars_id_;
     Atom() = default;
     virtual ~Atom() = 0;
-    virtual void buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) = 0;
-    virtual Atom * deepCopy() = 0;
-    virtual void print(int dep) = 0;
+    virtual void encode(const std::map<std::string, unsigned>& var2id) = 0;
+    virtual void print(int dep)const = 0;
 };
 
 class Literal: public Atom{
@@ -98,26 +105,26 @@ public:
 	std::map<std::string, Expression *> map_literal;
     Literal();
     Literal(LiteralType lt);
+    Literal(const Literal& that);
+
     ~Literal();
-    void setLiteralType(LiteralType literal_t);
-    void append(Expression *list_elem);
-    void insert(const std::string &key, Expression *value);
-    void buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) override;
-    Atom * deepCopy() override;
-    void print(int dep) override;
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep)const override;
 };
 
 class Parameter: public Atom{
 public:
 	/* Cypher中的参数'$' ( oC_SymbolicName | DecimalInteger )，总是$开头，后面是字母串或者自然数*/
 	std::string symbolic_name;
-	unsigned long long parameter_num;  // valid iff symbolic_name.length()==0
+	unsigned  parameter_num;  // valid iff symbolic_name.length()==0
     Parameter() ;
-    Parameter(unsigned long long  n);
+    Parameter(unsigned n);
     Parameter(const std::string &sym_name);
-    void buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) override;
-    Atom * deepCopy() override;
-    void print(int dep) override;
+    Parameter(const Parameter& that);
+
+    ~Parameter();
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
 class CaseExpression: public Atom{
@@ -131,122 +138,130 @@ public:
 
     CaseExpression();
     CaseExpression(CaseType ct);
+    CaseExpression(const CaseExpression &that);
     ~CaseExpression();
 
-    void setCaseType(CaseType case_t);
     
-    void addWhen(Expression *exp);
-    void addThen(Expression *exp);
-
-    void buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) override;
-    Atom * deepCopy() override;
-    void print(int dep) override;
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
+/* only for aggregate func count(*) strange? */
 class Count : public Atom{
 public:
-    /* only for aggregate func count(*) */
+    
     Count();
+    Count(const Count& that);
     ~Count();
-    void buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) override;
-    Atom * deepCopy() override;
-    void print(int dep) override;
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
+/* TODO: We dont support ListComprehension in this version */
 class ListComprehension: public Atom{
 public:
     /* [var in expression where filter | trans]*/
-	std::string variable_name;  // necessary
-    Expression *expression;     // necessary
-    Expression *filter;         // optional
-	Expression *trans;          // optional
+	std::string var_name_;  // necessary
+    Expression *exp_;     // necessary
+    Expression *filter_;         // optional
+	Expression *trans_;          // optional
 
     ListComprehension();
+    ListComprehension(const ListComprehension& that);
     ~ListComprehension();
 
-    void setVarName(const std::string &s);
-
-    void buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) override;
-    Atom * deepCopy() override;
-    void print(int dep) override;
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
+// TODO: We dont support pattern comprehension in this version.
 class PatternComprehension: public Atom{
 public:
-    // TODO: Comprehension涉及新的作用域的问题！现在好像还没考虑周到。
-	std::string variable_name;	// optional
-	PatternPart *pattern_part;  // necessary
-	Expression *filter;         // optional
-	Expression *trans;          // trans
+	std::string var_name_;	// optional
+	void* pattern_part_;         // necessary
+	Expression *filter_;         // optional
+	Expression *trans_;          // trans
     PatternComprehension();
+    PatternComprehension(const PatternComprehension& that);
     ~PatternComprehension();
-    void setVarName(const std::string &s);
-    void buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) override;
-    Atom * deepCopy() override;
-    void print(int dep)  override;
+
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
+// TODO: We dont support quantifier in this version.
 class Quantifier: public Atom{
 public:
     /* all(variable IN list WHERE predicate) */
 	enum QuantifierType {ALL, ANY, SINGLE, NONE};
-	QuantifierType quantifier_type;
-	std::string variable_name;
-    Expression *expression;
-    Expression *predicate;
-    Quantifier(): expression(nullptr), predicate(nullptr){}
-    Quantifier(QuantifierType qt): quantifier_type(qt), expression(nullptr), predicate(nullptr){}
+	QuantifierType quantifier_type_;
+	std::string var_name_;
+    Expression *container_;
+    Expression *exp_;
+
+    Quantifier();
+    Quantifier(QuantifierType qt);
+    Quantifier(const Quantifier& that);
     ~Quantifier();
-    void setQtfType(QuantifierType qt);
-    void setVarName(const std::string &name);
-    void print(int dep)  override;
+
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
+// TODO: We dont support PatternPredicate in this version.
 class PatternPredicate: public Atom{
 public:
-	PatternPart *pattern_part;
-    PatternPredicate(): pattern_part(nullptr){}
+	void *pattern_part;
+    PatternPredicate();
+    PatternPredicate(const PatternPredicate& that);
     ~PatternPredicate();
-    void print(int dep)  override;
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
-class ParenthesizedExpression : public Atom{
-public:
-	Expression *exp;
-    ParenthesizedExpression():exp(nullptr){}
-    ~ParenthesizedExpression();
-    void print(int dep)  override;
-};
-
+// TODO: We dont support FunctionInvocation in this version.
 class FunctionInvocation : public Atom{
 public:
-	std::vector<std::string> function_name;
+	std::vector<std::string> func_name_;
 	bool distinct;	// for example, count(DISTINCT p.city)
 	std::vector<Expression *> args;
-    FunctionInvocation():distinct(false){}
+
+    FunctionInvocation();
+    FunctionInvocation(const FunctionInvocation& that);
     ~FunctionInvocation();
-    void setDistinct(bool dis);
-    void addArgExp(Expression *exp);
-    void print(int dep) override;
+
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
+// TODO: We dont support ExistentialSubquery in this version.
 class ExistentialSubquery : public Atom{
 public:
 	//EXISTS SP? '{' SP? ( oC_RegularQuery | ( oC_Pattern ( SP? oC_Where )? ) ) SP? '}' ;
-	QueryTree *regular_query;
-	Pattern *pattern;
-	Expression *where_part;
-    ExistentialSubquery():regular_query(nullptr), pattern(nullptr), where_part(nullptr){}
-
+	void *query_tree_;
+	void *pattern_;
+	Expression *where_;
+    ExistentialSubquery();
+    ExistentialSubquery(const ExistentialSubquery& that);
     ~ExistentialSubquery();
-    void print(int dep) override;
+
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
 
 class Variable: public Atom{
 public:
-	std::string name;
-    Variable(){}
-    Variable(const std::string &s):name(s){}
-    void setName(const std::string &s);
-    void print(int dep) override;
+    static const unsigned ID_NONE = 0xffffffffU;
+	std::string var_;
+    unsigned id_;
+    Variable();
+    Variable(const std::string &s);
+    Variable(const Variable& that);
+    ~Variable();
+
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
 };
+
+
+}   // namespace GPStore

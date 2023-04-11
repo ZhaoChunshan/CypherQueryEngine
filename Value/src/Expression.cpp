@@ -1,54 +1,58 @@
 #include "Expression.h"
-using namespace std;
+#include <stdexcept>
 
 /**
- * helper functions for print
- * 
+ * helper functions
 */
-void printHead(int dep, const char *name, bool colon = true, bool endline = true){
+void GPStore::Expression::printHead(int dep, const char *name, bool colon = true, bool endline = true){
     for(int i = 0; i < dep; ++i) printf("\t");
     printf(name);
     colon ? putchar(':') : 0;
     endline ? putchar('\n') : 0;
 }
 
-/* class: Expression */
 
-Expression::Expression():oprt(EMPTY_OP), atom(nullptr), property_label(nullptr){
-
-}   
-
-Expression::~Expression(){
-    for(Expression *e : children)
-        if(e != nullptr)
-            delete e;
-    if(atom != nullptr)
-        delete atom;
-    if(property_label != nullptr)
-        delete property_label;
+GPStore::Atom * GPStore::Expression::AtomDeepCopy(GPStore::Atom *atom){
+    Atom *new_atom = nullptr;
+    switch (atom->atom_type_){
+        case Atom::LITERAL:
+            new_atom = new Literal(*(Literal *)atom);
+            break;
+        case Atom::PARAMETER:
+            new_atom = new Parameter(*(Parameter *)atom);
+            break;
+        case Atom::CASE_EXPRESSION:
+            new_atom = new CaseExpression(*(CaseExpression *)atom);
+            break;
+        case Atom::COUNT:
+            new_atom = new Count(*(Count *)atom);
+            break;
+        case Atom::LIST_COMPREHENSION:
+            new_atom = new ListComprehension(*(ListComprehension *)atom);
+            break;
+        case Atom::PATTERN_COMPREHENSION:
+            new_atom = new PatternComprehension(*(PatternComprehension *)atom);
+            break;
+        case Atom::QUANTIFIER:
+            new_atom = new Quantifier(*(Quantifier *) atom);
+            break;
+        case Atom::PATTERN_PREDICATE: 
+            new_atom = new PatternPredicate(*(PatternPredicate *)atom);
+            break;
+        case Atom::FUNCTION_INVOCATION:
+            new_atom = new FunctionInvocation(*(FunctionInvocation *)atom);
+            break;
+        case Atom::EXISTENTIAL_SUBQUERY:
+            new_atom = new ExistentialSubquery(*(ExistentialSubquery *)atom);
+            break;
+        case Atom::VARIABLE:
+            new_atom = new Variable(*(Variable *)atom);
+            break;
+    }
+    return new_atom;
 }
 
-bool Expression::isLeafNode(){
-    return oprt == EMPTY_OP;
-}
-
-void Expression::addChildExp(Expression *exp){
-    children.push_back(exp);
-}
-
-void Expression::setOprt(OperatorType op){
-    oprt = op;
-}
-
-void Expression::setAtom(Atom *_atom){
-    atom = _atom;
-}
-
-void Expression::setAtomPropLabels(AtomPropertyLabels *apl){
-    property_label = apl;
-}
-
-std::string Expression::OprtToString(OperatorType op){
+std::string GPStore::Expression::oprt2String(OperatorType op){
     switch (op){
         case OR:                return "OR";
         case XOR:               return "XOR";
@@ -80,59 +84,102 @@ std::string Expression::OprtToString(OperatorType op){
     return "EMPTY OP";
 }
 
-Expression *Expression::deepCopy(){
-    Expression *exp = new Expression();
-    exp->setOprt(oprt);
-    for(const string& s : covered_vars){
-            exp->covered_vars.insert(s);
-    }
-    for(auto id : covered_vars_id){
-        exp->covered_vars_id.insert(id);
-    }
-    if(oprt == EMPTY_OP){
-        if(atom != nullptr){
-            exp->setAtom(atom->deepCopy());
-            exp->setAtomPropLabels(new AtomPropertyLabels(*property_label));
+/* class: Expression */
+
+
+GPStore::Expression::Expression():oprt_(EMPTY_OP), atom_(nullptr), property_label_(nullptr){
+
+}   
+
+GPStore::Expression::Expression(const Expression& that):atom_(nullptr), property_label_(nullptr){
+    if(that.isAtom()){ 
+        atom_ = AtomDeepCopy(that.atom_);
+        if(that.property_label_ != nullptr){
+            property_label_ = new AtomPropertyLabels(*that.property_label_);
         }
-        
+    }else{
+        for(Expression *e : that.children_){
+            children_.push_back(new Expression(*e));
+        }
+    }
+    oprt_ = that.oprt_;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
+}
+
+GPStore::Expression& GPStore::Expression::operator=(const Expression& that){
+    if(&that == this) return *this;
+    release();
+    if(that.isAtom()){ 
+        atom_ = GPStore::Expression::AtomDeepCopy(that.atom_);
+        if(that.property_label_ != nullptr){
+            property_label_ = new GPStore::AtomPropertyLabels(*that.property_label_);
+        }
+    }else{
+        for(GPStore::Expression *e : that.children_){
+            children_.push_back(new GPStore::Expression(*e));
+        }
+    }
+    oprt_ = that.oprt_;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
+}
+
+GPStore::Expression::~Expression(){
+    release();
+}
+
+/* release allocated memory */
+void GPStore::Expression::release(){
+    if(isAtom()){
+        if(atom_ != nullptr)
+            delete atom_;    
+        if(property_label_ != nullptr)
+            delete property_label_;
+    }else{
+        for(Expression *e : children_)
+            delete e;
+        std::vector<Expression*>().swap(children_);
+    }
+    
+    oprt_ = EMPTY_OP;
+    atom_ = nullptr;
+    property_label_ = nullptr;
+    std::vector<std::string>().swap(covered_vars_.vars);
+    std::vector<unsigned>().swap(covered_vars_id_);
+}
+
+bool GPStore::Expression::isAtom() const{
+    return oprt_ == EMPTY_OP;
+}
+
+void GPStore::Expression::encode(const std::map<std::string, unsigned>& var2id){
+    if(isAtom()){
+        atom_->encode(var2id);
     } else{
-        for(Expression *child : children){
-            exp->children.push_back(child->deepCopy());
+        for(auto exp : children_){
+            exp->encode(var2id);
         }
     }
-    return exp;
+    covered_vars_id_.clear();
+    for(const auto& var_name : covered_vars_.vars){
+        covered_vars_id_.push_back(var2id.at(var_name));
+    }
 }
 
-
-// Assume each node in the expression true has covered_vars.
-// we just need to map var->id along the tree.
-void Expression::buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id){
-    for(const string &var : covered_vars){
-        covered_vars_id.insert(var2id.at(var));
-    }
-    if(oprt == EMPTY_OP){
-        atom->buildCoveredVarsId(var2id);
-    } else {
-        for(Expression *child : children){
-            child->buildCoveredVarsId(var2id);
-        }
-    }
-    return;
-}
-
-void Expression::print(int dep){
+void GPStore::Expression::print(int dep) const{
     printHead(dep, "Expression");
-    if(oprt == EMPTY_OP){
+    if(oprt_ == EMPTY_OP){
         // 这是一个Atom结点！
-        atom->print(dep + 1);
-        if(property_label != nullptr){
-            property_label->print(dep + 1);
+        atom_->print(dep + 1);
+        if(property_label_ != nullptr){
+            property_label_->print(dep + 1);
         }
         return;
     }
     // 处理各类Oprt结点！
-    printHead(dep + 1, OprtToString(oprt).c_str(), false);
-    for(Expression *child : children){
+    printHead(dep + 1, oprt2String(oprt_).c_str(), false);
+    for(Expression *child : children_){
         child->print(dep + 1);
     }
 }
@@ -140,34 +187,36 @@ void Expression::print(int dep){
 
 /* class AtomPropertyLabels */
 
-AtomPropertyLabels::AtomPropertyLabels(){
+GPStore::AtomPropertyLabels::AtomPropertyLabels(){
 
 }
 
-AtomPropertyLabels::AtomPropertyLabels(const AtomPropertyLabels &other){
-    for(const string& k : other.key_names){
-        key_names.push_back(k);
-    }
-    for(const string& l : other.node_labels){
-        node_labels.push_back(l);
-    }
+GPStore::AtomPropertyLabels::AtomPropertyLabels(const AtomPropertyLabels &that){
+    key_names_ = that.key_names_;
+    node_labels_ = that.node_labels_;
 }
 
-void AtomPropertyLabels::addKeyName(const std::string &k){
-    key_names.push_back(k);
-}
-void AtomPropertyLabels::addNodeLabel(const std::string &l){
-    node_labels.push_back(l);
+GPStore::AtomPropertyLabels& 
+GPStore::AtomPropertyLabels:: operator=(const GPStore::AtomPropertyLabels &that){
+    key_names_ = that.key_names_;
+    node_labels_ = that.node_labels_;
 }
 
-void AtomPropertyLabels::print(int dep){
-    printHead(dep, "Property Loop Up: ", false, false);
-    for(const auto &p : key_names){
+void GPStore::AtomPropertyLabels::addKeyName(const std::string &k){
+    key_names_.push_back(k);
+}
+void GPStore::AtomPropertyLabels::addNodeLabel(const std::string &l){
+    node_labels_.push_back(l);
+}
+
+void GPStore::AtomPropertyLabels::print(int dep)const{
+    Expression::printHead(dep, "Property Loop Up: ", false, false);
+    for(const auto &p : key_names_){
         printf(".%s", p.c_str());
     }
     putchar('\n');
-    printHead(dep, "Labels: ", false, false);
-    for(const auto &l : node_labels){
+    Expression::printHead(dep, "Labels: ", false, false);
+    for(const auto &l : node_labels_){
         printf(":%s", l.c_str());
     }
     putchar('\n');
@@ -177,17 +226,53 @@ void AtomPropertyLabels::print(int dep){
 
 /* class Literal */
 
-Literal::Literal(){
-    atom_type = LITERAL;
+GPStore::Literal::Literal(){
+    atom_type_ = LITERAL;
     literal_type = NULL_LITERAL;
 }
 
-Literal::Literal(LiteralType lt){
-    atom_type = LITERAL;
+GPStore::Literal::Literal(LiteralType lt){
+    atom_type_ = LITERAL;
     literal_type = lt;
 }
 
-Literal::~Literal(){
+GPStore::Literal::Literal(const Literal& that){
+    atom_type_ = that.atom_type_;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
+    literal_type = that.literal_type;
+    switch (that.literal_type)
+    {
+    case BOOLEAN_LITERAL:
+        b = that.b;
+        break;
+    case NULL_LITERAL:
+        break;
+    case INT_LITERAL:
+        i = that.i;
+        break;
+    case DOUBLE_LITERAL:
+        d = that.d;
+        break;
+    case STRING_LITERAL:
+        s = that.s;
+        break;
+    case LIST_LITERAL:
+        for(auto e : that.list_literal){
+            list_literal.push_back(new Expression(*e));
+        }
+        break;
+    case MAP_LITERAL:
+        for(const auto& p: that.map_literal){
+            map_literal.insert(make_pair(p.first, new Expression(*p.second)));
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+GPStore::Literal::~Literal(){
     for(Expression *e : list_literal)
         if(e != nullptr)
             delete e;
@@ -196,146 +281,117 @@ Literal::~Literal(){
             delete p.second;
 }
 
-void Literal::setLiteralType(LiteralType literal_t){
-    literal_type = literal_t;
-}
-
-void Literal::append(Expression *list_elem){
-    list_literal.push_back(list_elem);
-}
-
-void Literal::insert(const std::string &key, Expression *value){
-    map_literal.insert(make_pair(key, value));
-}
-
-void Literal::buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id){
-    for(const string& s : covered_vars){
-        covered_vars_id.insert(var2id.at(s));
+void GPStore::Literal::encode(const std::map<std::string, unsigned>& var2id){
+    covered_vars_id_.clear();
+    for(const std::string& s : covered_vars_.vars){
+        covered_vars_id_.push_back(var2id.at(s));
     }
     if(literal_type == LIST_LITERAL){
         for(Expression *e : list_literal){
-            e->buildCoveredVarsId(var2id);
+            e->encode(var2id);
         }
     }else if(literal_type == MAP_LITERAL){
         for(const auto&p : map_literal){
-            p.second->buildCoveredVarsId(var2id);
+            p.second->encode(var2id);
         }
     } 
     return;
 }
 
-Atom * Literal::deepCopy() {
-    Literal *l = new Literal(literal_type);
-    switch(literal_type){
-        case BOOLEAN_LITERAL:
-            l->b = b;
-            break;
-        case NULL_LITERAL:
-            break;
-        case INT_LITERAL:
-            l->i = i;
-            break;
-        case DOUBLE_LITERAL:
-            l->d = d;
-            break;
-        case STRING_LITERAL:
-            l->s = s;
-            break;
-        case LIST_LITERAL:
-            for(Expression *e : list_literal){
-                l->list_literal.push_back(e->deepCopy());
-            }
-            break;
-        case MAP_LITERAL:
-            for(const auto& p: map_literal){
-                l->map_literal.insert(make_pair(p.first, p.second->deepCopy()));
-            }
-            break;
-    }
-    return (Atom *)l;
-}
-
-void Literal::print(int dep) {
-    printHead(dep, "Literal: ", false, false);
+void GPStore::Literal::print(int dep) const{
+    Expression::printHead(dep, "Literal: ", false, false);
     if(literal_type == BOOLEAN_LITERAL){
         printf(b ? "true" : "false");
         printf("(type: boolean)\n");
     }else if(literal_type == NULL_LITERAL){
         printf("NULL\n");
     }else if(literal_type == INT_LITERAL){
-        printf("%d(type: integer)\n", i);
+        printf("%lld(type: integer)\n", i);
     }else if(literal_type == DOUBLE_LITERAL){
         printf("%lf(type: double)\n", d);
     }else if(literal_type == STRING_LITERAL){
         printf("%s(type: string)\n", s.c_str());
     }else if(literal_type == LIST_LITERAL){
         printf("list\n");
-        printHead(dep + 1, "[", false);
+        Expression::printHead(dep + 1, "[", false);
         for(auto &exp : list_literal){
             exp->print(dep + 2);
         }
-        printHead(dep + 1, "]", false);
+        Expression::printHead(dep + 1, "]", false);
     }else if(literal_type == MAP_LITERAL){
         printf("map\n");
-        printHead(dep + 1, "{", false);
+        Expression::printHead(dep + 1, "{", false);
         if(map_literal.size()){
             auto it = map_literal.begin();
-            printHead(dep + 2, "KeyName", true, false);
+            Expression::printHead(dep + 2, "KeyName", true, false);
             printf(" %s\n", it->first.c_str());
             it->second->print(dep + 2);
             for(++it; it != map_literal.end(); ++it){
-                printHead(dep + 2, ",", false, true);
-                printHead(dep + 2, "KeyName", true, false);
+                Expression::printHead(dep + 2, ",", false, true);
+                Expression::printHead(dep + 2, "KeyName", true, false);
                 printf(" %s\n", it->first.c_str());
                 it->second->print(dep + 2);
             }
         }
-        printHead(dep + 1, "}", false);
+        Expression::printHead(dep + 1, "}", false);
     }
     // DONE.
 }
 
 /* class: Parameter */
 
-Parameter::Parameter(){
+GPStore::Parameter::Parameter(){
 
 }
 
-Parameter::Parameter(unsigned long long  n){
+GPStore::Parameter::Parameter(unsigned n){
     parameter_num = n;
 }
 
-Parameter::Parameter(const std::string &sym_name):symbolic_name(sym_name){
-
+GPStore::Parameter::Parameter(const std::string &sym_name){
+    symbolic_name = sym_name;
 }
 
-void Parameter::buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) {
+GPStore::Parameter::Parameter(const Parameter& that){
+    symbolic_name = that.symbolic_name;
+    parameter_num = that.parameter_num;
+}
+
+GPStore::Parameter::~Parameter(){ }
+
+void GPStore::Parameter::encode(const std::map<std::string, unsigned>& var2id) {
     // A parameter doesnot cover any variable, just return
     return;    
 }
 
-Atom * Parameter::deepCopy() {
-    Atom *a;
-    if(symbolic_name.length()){
-        a = new Parameter(symbolic_name);
-    }else{
-        a = new Parameter(parameter_num);
-    }
-    return a;
-}
-
-void Parameter::print(int dep) {
-    string s = "Paramter: " + (symbolic_name.length () != 0 ? symbolic_name : "$" + to_string(parameter_num));
-    printHead(dep, s.c_str(), false, true);
+void GPStore::Parameter::print(int dep) const{
+    std::string s = "Paramter: " + (symbolic_name.length () != 0 ? symbolic_name : "$" + std::to_string(parameter_num));
+    Expression::printHead(dep, s.c_str(), false, true);
 }
 
 /* class: CaseExpression */
 
-CaseExpression::CaseExpression(): test_expr(nullptr), else_expr(nullptr) { }
+GPStore::CaseExpression::CaseExpression(): test_expr(nullptr), else_expr(nullptr) { }
 
-CaseExpression::CaseExpression(CaseType ct): case_type(ct), test_expr(nullptr), else_expr(nullptr) { }
+GPStore::CaseExpression::CaseExpression(CaseType ct): case_type(ct), test_expr(nullptr), else_expr(nullptr) { }
 
-CaseExpression::~CaseExpression(){
+GPStore::CaseExpression::CaseExpression(const CaseExpression &that):test_expr(nullptr), else_expr(nullptr){
+    case_type = that.case_type;
+    if(that.case_type == SIMPLE){
+        test_expr = new Expression(*that.test_expr);
+    }
+    for(auto e : that.when_exprs){
+        when_exprs.push_back(new Expression(*e));
+    }
+    for(auto e : that.then_exprs){
+        then_exprs.push_back(new Expression(*e));
+    }
+    if(that.else_expr != nullptr){
+        else_expr = new Expression(*that.else_expr);
+    }
+}
+
+GPStore::CaseExpression::CaseExpression::~CaseExpression(){
     if(test_expr != nullptr)
         delete test_expr;
     for(Expression *e : when_exprs)
@@ -346,227 +402,331 @@ CaseExpression::~CaseExpression(){
         delete else_expr;
 }
 
-void CaseExpression::setCaseType(CaseType case_t){
-    case_type = case_t;
-}
 
-
-void CaseExpression::addWhen(Expression *exp){
-    when_exprs.push_back(exp);
-}
-
-void CaseExpression::addThen(Expression *exp){
-    then_exprs.push_back(exp);
-}
-
-void CaseExpression::buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id){
-    for(const string &s : covered_vars){
-        covered_vars_id.insert(var2id.at(s));
+void GPStore::CaseExpression::encode(const std::map<std::string, unsigned>& var2id){
+    for(const std::string &s : covered_vars_.vars){
+        covered_vars_id_.push_back(var2id.at(s));
     }
     if(test_expr != nullptr)
-        test_expr->buildCoveredVarsId(var2id);
+        test_expr->encode(var2id);
     for(Expression *w : when_exprs){
-        w->buildCoveredVarsId(var2id);
+        w->encode(var2id);
     }
     for(Expression *t : then_exprs){
-        t->buildCoveredVarsId(var2id);
+        t->encode(var2id);
     }
     if(else_expr != nullptr){
-        else_expr->buildCoveredVarsId(var2id);
+        else_expr->encode(var2id);
     }
     return;
 }
 
-
-Atom * CaseExpression::deepCopy() {
-    CaseExpression *ce = new CaseExpression(case_type);
-    if(test_expr != nullptr){
-        ce->test_expr = test_expr->deepCopy();
-    }
-    for(Expression *e : when_exprs){
-        ce->when_exprs.push_back(e->deepCopy());
-    }
-    for(Expression *e : then_exprs){
-        ce->then_exprs.push_back(e->deepCopy());
-    }
-    if(else_expr != nullptr){
-        ce->else_expr = else_expr->deepCopy();
-    }
-    return (Atom *)ce;
-}
-
-void CaseExpression::print(int dep) {
-    printHead(dep, "Case");
+void GPStore::CaseExpression::print(int dep) const {
+    Expression::printHead(dep, "Case");
     if(case_type == SIMPLE){
-        printHead(dep + 1, "TEST");
+        Expression::printHead(dep + 1, "TEST");
         test_expr->print(dep + 1);
     }
     for(int i = 0; i < when_exprs.size(); ++i){
-        printHead(dep + 1, "WHEN");
+        Expression::printHead(dep + 1, "WHEN");
         when_exprs[i]->print(dep + 1);
-        printHead(dep + 1, "THEN");
+        Expression::printHead(dep + 1, "THEN");
         then_exprs[i]->print(dep + 1);
     }
     if(else_expr != nullptr){
-        printHead(dep + 1, "ELSE");
+        Expression::printHead(dep + 1, "ELSE");
         else_expr->print(dep + 1);
     }
 }
 
 /* class Count */
-Count::Count(){
-    atom_type = COUNT;
+
+GPStore::Count::Count(){
+    atom_type_ = COUNT;
+}   
+
+GPStore::Count::Count(const Count& that){
+    atom_type_ = COUNT;
 }
 
-Count::~Count(){
+GPStore::Count::~Count(){
 
 }
 
-void Count::buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id){
-    for(const string& s : covered_vars){
-        covered_vars_id.insert(var2id.at(s));
+// I do not think Count(*) cover any var.
+void GPStore::Count::encode(const std::map<std::string, unsigned>& var2id){
+    for(const std::string& s : covered_vars_.vars){
+        covered_vars_id_.push_back(var2id.at(s));
     }
 }
 
-Atom * Count::deepCopy() {
-    Count *cnt = new Count();
-    for(const string& s : covered_vars){
-        cnt->covered_vars.insert(s);
-    }
-    for(auto id : covered_vars_id){
-        cnt->covered_vars_id.insert(id);
-    }
-    return (Atom *)cnt;
-}
-void Count::print(int dep) {
-    printHead(dep, "COUNT (*)", false);
+void GPStore::Count::print(int dep) const{
+    Expression::printHead(dep, "COUNT (*)", false);
 }
 
-ListComprehension::ListComprehension():expression(nullptr), filter(nullptr), trans(nullptr){
-    atom_type = LIST_COMPREHENSION;
+GPStore::ListComprehension::ListComprehension():exp_(nullptr), filter_(nullptr), trans_(nullptr){
+    atom_type_ = LIST_COMPREHENSION;
 }
 
-ListComprehension::~ListComprehension(){
-    if(expression != nullptr)
-        delete expression;
-    if(filter != nullptr)
-        delete filter;
-    if(trans != nullptr)
-        delete trans;
+GPStore::ListComprehension::ListComprehension(const ListComprehension& that):exp_(nullptr), filter_(nullptr), trans_(nullptr){
+    atom_type_ = LIST_COMPREHENSION;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
+    var_name_ = that.var_name_;
+    exp_ = new Expression(*that.exp_);
+    if(that.filter_ != nullptr)
+        filter_ = new Expression(*that.filter_);
+    if(that.trans_ != nullptr)
+        trans_ = new Expression(*that.trans_);
 }
 
-void ListComprehension::setVarName(const std::string &s){
-    variable_name = s;
+GPStore::ListComprehension::ListComprehension::~ListComprehension(){
+    if(exp_ != nullptr)
+        delete exp_;
+    if(filter_ != nullptr)
+        delete filter_;
+    if(trans_ != nullptr)
+        delete trans_;
 }
 
-void ListComprehension::buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id){
-    for(const string& s : covered_vars){
-        covered_vars_id.insert(var2id.at(s));
+void GPStore::ListComprehension::ListComprehension::encode(const std::map<std::string, unsigned>& var2id){
+    for(const std::string& s : covered_vars_.vars){
+        covered_vars_id_.push_back(var2id.at(s));
     }
-    expression->buildCoveredVarsId(var2id);
-    if(filter != nullptr){
-        filter->buildCoveredVarsId(var2id);
+    exp_->encode(var2id);
+    if(filter_ != nullptr){
+        filter_->encode(var2id);
     }
-    if(trans != nullptr){
-        trans->buildCoveredVarsId(var2id);
+    if(trans_ != nullptr){
+        trans_->encode(var2id);
     }
 }
 
-Atom * ListComprehension::deepCopy() {
-    ListComprehension *lsc = new ListComprehension();
-    lsc->expression = expression->deepCopy();
-    if(filter != nullptr)
-        lsc->filter = filter->deepCopy();
-    if(trans != nullptr)
-        lsc->trans = trans->deepCopy();
-}
-
-void ListComprehension::print(int dep) {
-    printHead(dep, "ListComprehension");
-    printHead(dep + 1, "[", false, true);
-    printHead(dep + 2, variable_name.c_str(), false);
-    printHead(dep + 2, "IN", false);
-    expression->print(dep + 2);
-    if(filter != nullptr){
-        printHead(dep + 2, "WHERE", false);
-        filter->print(dep + 2);
+void GPStore::ListComprehension::print(int dep) const{
+    Expression::printHead(dep, "ListComprehension");
+    Expression::printHead(dep + 1, "[", false, true);
+    Expression::printHead(dep + 2, var_name_.c_str(), false);
+    Expression::printHead(dep + 2, "IN", false);
+    exp_->print(dep + 2);
+    if(filter_ != nullptr){
+        Expression::printHead(dep + 2, "WHERE", false);
+        filter_->print(dep + 2);
     }
-    if(trans != nullptr){
-        printHead(dep + 2, "|", false);
-        trans->print(dep + 2);
+    if(trans_ != nullptr){
+        Expression::printHead(dep + 2, "|", false);
+        trans_->print(dep + 2);
     }
-    printHead(dep + 1, "]", false);
+    Expression::printHead(dep + 1, "]", false);
     return;
 }
 
-PatternComprehension::PatternComprehension(): pattern_part(nullptr), filter(nullptr), trans(nullptr){
-    atom_type = PATTERN_COMPREHENSION;
+GPStore::PatternComprehension::PatternComprehension(): pattern_part_(nullptr), filter_(nullptr), trans_(nullptr){
+    atom_type_ = PATTERN_COMPREHENSION;
+    throw std::runtime_error("[ERROR] Not implemented.");
 }
 
-PatternComprehension::~PatternComprehension(){
-    if(pattern_part != nullptr)
-        delete pattern_part;
-    if(filter != nullptr)
-        delete filter;
-    if(trans != nullptr)
-        delete trans;
+GPStore::PatternComprehension::PatternComprehension(const PatternComprehension& that){
+    throw std::runtime_error("[ERROR] Not implemented.");
+    atom_type_ = that.atom_type_;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
+    var_name_ = that.var_name_;
+    //TODO pattern_part_ = that.pattern_part_; 
+    filter_ = new Expression(*that.filter_);
+    trans_ = new Expression(*that.trans_); 
+    
 }
 
-void PatternComprehension::setVarName(const std::string &s){
-    variable_name = s;
+GPStore::PatternComprehension::~PatternComprehension(){
+    throw std::runtime_error("[ERROR] Not implemented.");
 }
 
-void PatternComprehension::buildCoveredVarsId(const std::map<std::string, unsigned long long>& var2id) override;
-Atom * PatternComprehension::deepCopy() override;
-void PatternComprehension::print(int dep)  override;
 
-Quantifier::~Quantifier(){
-    if(expression != nullptr)
-        delete expression;
-    if(predicate != nullptr)
-        delete predicate;
+void GPStore::PatternComprehension::encode(const std::map<std::string, unsigned>& var2id) {
+    throw std::runtime_error("[ERROR] Not implemented.");
+};
+
+void GPStore::PatternComprehension::print(int dep)  const {
+    throw std::runtime_error("[ERROR] Not implemented.");
 }
 
-void Quantifier::setQtfType(QuantifierType qt){
-    quantifier_type = qt;
+GPStore::Quantifier::Quantifier():container_(nullptr), exp_(nullptr){
+
 }
 
-void Quantifier::setVarName(const std::string &name){
-    variable_name = name;
+
+GPStore::Quantifier::Quantifier(QuantifierType qt):container_(nullptr), exp_(nullptr), quantifier_type_(qt){
+
 }
 
-PatternPredicate::~PatternPredicate(){
-    if(pattern_part != nullptr)
-        delete pattern_part;
+GPStore::Quantifier::Quantifier(const Quantifier& that):container_(nullptr), exp_(nullptr) {
+    var_name_ = that.var_name_;
+    quantifier_type_ = that.quantifier_type_;
+    if(that.container_ != nullptr){
+        container_ = new Expression(*that.container_);
+    }
+    if(that.exp_ != nullptr){
+        exp_ = new Expression(*that.exp_);
+    }
 }
 
-ParenthesizedExpression::~ParenthesizedExpression(){
-    if(exp != nullptr)
-        delete exp;
+GPStore::Quantifier::~Quantifier(){
+    if(container_ != nullptr){
+        delete container_;
+    }
+    if(exp_ != nullptr){
+        delete exp_;
+    }
 }
 
-FunctionInvocation::~FunctionInvocation(){
+void GPStore::Quantifier::encode(const std::map<std::string, unsigned>& var2id) {
+    for(const std::string& s : covered_vars_.vars){
+        covered_vars_id_.push_back(var2id.at(s));
+    }
+    container_->encode(var2id);
+    if(exp_ != nullptr){
+        exp_->encode(var2id);
+    }
+}
+
+void GPStore::Quantifier::print(int dep) const{
+    const char *s[4]={
+        "ALL", "ANY", "SINGLE", "NONE"
+    };
+    Expression::printHead(dep, s[(int)quantifier_type_],false,false);
+    printf("(\n");
+    Expression::printHead(dep + 1, var_name_.c_str(), false);
+    Expression::printHead(dep + 1, "IN",false);
+    container_->print(dep + 1);
+    if(exp_ != nullptr){
+        Expression::printHead(dep + 1, "WHERE", false);
+        exp_->print(dep + 1);
+    }
+    Expression::printHead(dep, ")", false);
+}
+
+GPStore::PatternPredicate::PatternPredicate(){
+    throw std::runtime_error("[ERROR] Not implemented.");
+}
+
+GPStore::PatternPredicate::PatternPredicate(const PatternPredicate& that){
+    throw std::runtime_error("[ERROR] Not implemented.");
+}   
+
+GPStore::PatternPredicate::~PatternPredicate(){
+    throw std::runtime_error("[ERROR] Not implemented.");
+}
+
+void GPStore::PatternPredicate::encode(const std::map<std::string, unsigned>& var2id) {
+    throw std::runtime_error("[ERROR] Not implemented.");
+}
+
+void GPStore::PatternPredicate::print(int dep) const {
+    throw std::runtime_error("[ERROR] Not implemented.");
+}
+
+
+GPStore::FunctionInvocation::FunctionInvocation():distinct(false){
+
+}
+
+GPStore::FunctionInvocation::FunctionInvocation(const FunctionInvocation& that){
+    func_name_ = that.func_name_;
+    distinct = that.distinct;
+    for(auto e : that.args){
+        args.push_back(new Expression(*e));
+    }
+}
+
+GPStore::FunctionInvocation::~FunctionInvocation(){
     for(Expression *e : args)
         delete e;
 }
 
-void FunctionInvocation::setDistinct(bool dis){
-    distinct = dis;
+void GPStore::FunctionInvocation::encode(const std::map<std::string, unsigned>& var2id) {
+    for(const std::string& s : covered_vars_.vars){
+        covered_vars_id_.push_back(var2id.at(s));
+    }
+    for(auto arg : args){
+        arg->encode(var2id);
+    }
 }
 
-void FunctionInvocation::addArgExp(Expression *exp){
-    args.push_back(exp);
+void GPStore::FunctionInvocation::print(int dep) const {
+    // Print Head && Function Name
+    Expression::printHead(dep, "Function: ", false, false);
+    printf("%s", func_name_[0].c_str());
+    for(int i = 1; i < func_name_.size(); ++i)
+        printf(".%s", func_name_[i].c_str());
+    printf("(\n");
+    // Distinct
+    if(distinct)
+        Expression::printHead(dep + 1, "DISTINCT", false);
+    // Print args
+    for(auto e : args){
+        e->print(dep + 1);
+    }
+    Expression::printHead(dep, ")", false, true);
 }
 
-ExistentialSubquery::~ExistentialSubquery(){
-    if(regular_query != nullptr)
-        delete regular_query;
-    if(pattern != nullptr)
-        delete pattern;
-    if(where_part != nullptr)
-        delete where_part;
+
+GPStore::ExistentialSubquery::ExistentialSubquery(){
+    throw std::runtime_error("[ERROR] Not implemented.");
 }
 
-void Variable::setName(const std::string &s){
-    name = s;
+GPStore::ExistentialSubquery::ExistentialSubquery(const ExistentialSubquery& that){
+    throw std::runtime_error("[ERROR] Not implemented.");
+}
+
+GPStore::ExistentialSubquery:: ~ExistentialSubquery(){
+    throw std::runtime_error("[ERROR] Not implemented.");
+}
+
+void GPStore::ExistentialSubquery::encode(const std::map<std::string, unsigned>& var2id) {
+    throw std::runtime_error("[ERROR] Not implemented.");
+}
+
+void GPStore::ExistentialSubquery::print(int dep)const{
+    throw std::runtime_error("[ERROR] Not implemented.");
+}
+
+/* class Variable */
+
+GPStore::Variable::Variable(){
+    atom_type_ = VARIABLE;
+    id_ = ID_NONE;
+}
+
+GPStore::Variable::Variable(const std::string &s){
+    atom_type_ = VARIABLE;
+    var_ = s;
+    id_ = ID_NONE;
+}
+
+GPStore::Variable::Variable(const Variable& that){
+    atom_type_ = that.atom_type_;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
+    var_ = that.var_;
+    id_ = that.id_;
+}
+
+GPStore::Variable::~Variable(){
+
+}
+
+void GPStore::Variable::encode(const std::map<std::string, unsigned>& var2id){
+    auto it = var2id.find(var_);
+    if(it == var2id.end()){
+        id_ = ID_NONE;
+    }else{
+        id_ = it->second;
+    }
+    covered_vars_id_.clear();
+    covered_vars_id_.push_back(id_);
+}
+
+void GPStore::Variable::print(int dep) const {
+    Expression::printHead(dep, "Variable: ", false, false);
+    printf("%s\n", var_.c_str());
 }

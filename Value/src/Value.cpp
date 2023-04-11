@@ -6,11 +6,11 @@
 #include <iostream>
 using namespace std;
 
-PGStore::Value::Value(){
+GPStore::Value::Value(){
     type_ = NO_VALUE;
 }
 
-PGStore::Value::Value(Type _type_):type_(_type_){
+GPStore::Value::Value(Type _type_):type_(_type_){
     if(_type_ == STRING){
         data_.String = new string();
     } else if(_type_ == PATH){
@@ -22,39 +22,39 @@ PGStore::Value::Value(Type _type_):type_(_type_){
     }
 }
 
-PGStore::Value::Value(const Value &other){
+GPStore::Value::Value(const Value &other){
     ConstructFrom(other);
 }
 
-PGStore::Value::Value(int_64 int_){
+GPStore::Value::Value(int_64 int_){
     type_ = INTEGER;
     data_.Int = int_;
 }
 
-PGStore::Value::Value(double float_):type_(FLOAT){
+GPStore::Value::Value(double float_):type_(FLOAT){
     data_.Float = float_;
 }
 
-PGStore::Value::Value(const std::string& str):type_(STRING){
+GPStore::Value::Value(const std::string& str):type_(STRING){
     data_.String = new string(str);
 }   
 
-PGStore::Value::Value(const char* s):type_(STRING){
+GPStore::Value::Value(const char* s):type_(STRING){
     data_.String = new string(s);
 }
 
-PGStore::Value::Value(bool b):type_(BOOLEAN){
+GPStore::Value::Value(bool b):type_(BOOLEAN){
     data_.Boolean = b;
 }
 
-PGStore::Value::Value(Type _type, uint_64 _id):type_(_type){
+GPStore::Value::Value(Type _type, uint_64 _id):type_(_type){
     if(_type == NODE)
         data_.Node = _id;
     else
         data_.Edge = _id;
 }
 
-PGStore::Value::Value(const PathContent &path_):type_(PATH){
+GPStore::Value::Value(const PathContent &path_):type_(PATH){
     data_.Path = new PathContent();
     for(auto node :path_.node_id_){
         data_.Path->node_id_.push_back(node);
@@ -67,7 +67,7 @@ PGStore::Value::Value(const PathContent &path_):type_(PATH){
     }
 }
 
-PGStore::Value::Value(const std::vector<uint_64>& node_id, const std::vector<uint_64> &edge_id, const std::vector<EdgeType>& edge_type):type_(PATH){
+GPStore::Value::Value(const std::vector<uint_64>& node_id, const std::vector<uint_64> &edge_id, const std::vector<EdgeType>& edge_type):type_(PATH){
     data_.Path = new PathContent();
     for(auto node :node_id){
         data_.Path->node_id_.push_back(node);
@@ -80,14 +80,14 @@ PGStore::Value::Value(const std::vector<uint_64>& node_id, const std::vector<uin
     }
 }
 
-PGStore::Value::Value(const std::vector<Value *> &list_):type_(LIST){
+GPStore::Value::Value(const std::vector<Value *> &list_):type_(LIST){
     data_.List = new vector<Value *>();
     for(const Value *v : list_){
         data_.List->push_back(ValueDeepCopy(v));
     }
 }
 
-PGStore::Value::Value(const std::vector<std::string> &keys, const std::vector<Value *> &values):type_(MAP) {
+GPStore::Value::Value(const std::vector<std::string> &keys, const std::vector<Value *> &values):type_(MAP) {
     data_.Map = new map<std::string, Value *>();
     uint_64 n = keys.size();
     assert(values.size() == n);
@@ -96,20 +96,20 @@ PGStore::Value::Value(const std::vector<std::string> &keys, const std::vector<Va
     }
 }
 
-PGStore::Value::~Value(){
+GPStore::Value::~Value(){
     Destruct();
 }
 
-bool PGStore::Value::isNull() const{
+bool GPStore::Value::isNull() const{
     return type_ == NO_VALUE;
 }
 
-bool PGStore::Value::storable() const{
+bool GPStore::Value::storable() const{
     return type_ == INTEGER || type_ == FLOAT || type_ == STRING || type_ == BOOLEAN ||
         isIntArray() || isFloatArray() || isBooleanArray() || isStringArray();
 }
 
-bool PGStore::Value::isIntArray() const{
+bool GPStore::Value::isIntArray() const{
     if(type_ != LIST) return false;
 
     for(const Value *v : *data_.List){
@@ -120,7 +120,7 @@ bool PGStore::Value::isIntArray() const{
     return true;
 }
 
-bool PGStore::Value::isFloatArray() const{
+bool GPStore::Value::isFloatArray() const{
     if(type_ != LIST) return false;
 
     for(const Value *v : *data_.List){
@@ -131,7 +131,7 @@ bool PGStore::Value::isFloatArray() const{
     return true;
 }
 
-bool PGStore::Value::isStringArray() const{
+bool GPStore::Value::isStringArray() const{
     if(type_ != LIST) return false;
 
     for(const Value *v : *data_.List){
@@ -142,7 +142,7 @@ bool PGStore::Value::isStringArray() const{
     return true;
 }
 
-bool PGStore::Value::isBooleanArray() const{
+bool GPStore::Value::isBooleanArray() const{
     if(type_ != LIST) return false;
 
     for(const Value *v : *data_.List){
@@ -153,22 +153,22 @@ bool PGStore::Value::isBooleanArray() const{
     return true;
 }
 
-PGStore::uint_64 PGStore::Value::convertToBytes(void * ptr){
+GPStore::uint_64 GPStore::Value::convertToBytes(void * ptr){
     //TODO
     return 0;
 }
 
-void PGStore::Value::constructFromBytes(const void * ptr, uint_64 n){
+void GPStore::Value::constructFromBytes(const void * ptr, uint_64 n){
     // TODO
     return;
 }
 
 
-PGStore::Value::Type PGStore::Value::getType() const{
+GPStore::Value::Type GPStore::Value::getType() const{
     return type_;
 }
 
-PGStore::int_64 PGStore::Value::hashCode() const {
+GPStore::int_64 GPStore::Value::hashCode() const {
     int_64 hash = 0, seed = 131, mask = 0x7FFFFFFFFFFFFFFF;
     uint_64 n = 0;
     switch (type_)
@@ -205,7 +205,7 @@ PGStore::int_64 PGStore::Value::hashCode() const {
     return 131; //make g++ happy
 }
 
-bool PGStore::Value::operator==(const Value& other) const{
+bool GPStore::Value::operator==(const Value& other) const{
     switch (type_)
     {
         case Value::INTEGER:
@@ -233,7 +233,7 @@ bool PGStore::Value::operator==(const Value& other) const{
 }
 
 
-bool PGStore::Value::operator<(const Value& other) const{
+bool GPStore::Value::operator<(const Value& other) const{
     switch (type_)
     {
         case Value::INTEGER:
@@ -260,7 +260,7 @@ bool PGStore::Value::operator<(const Value& other) const{
     return false;   //make g++ happy
 }
 
-PGStore::Value& PGStore::Value::operator=(const Value&other){
+GPStore::Value& GPStore::Value::operator=(const Value&other){
     if(this == &other){
         return *this;
     }
@@ -269,22 +269,22 @@ PGStore::Value& PGStore::Value::operator=(const Value&other){
     return *this;
 }
 
-void PGStore::Value::append(const PGStore::Value& value){
+void GPStore::Value::append(const GPStore::Value& value){
     data_.List->push_back(ValueDeepCopy(&value));
     return;
 }
 
-PGStore::Value& PGStore::Value::operator[](uint_64 index){
+GPStore::Value& GPStore::Value::operator[](uint_64 index){
     assert(type_ == LIST and data_.List->size() > index);
     return *data_.List->at(index);
 }
 
-void PGStore::Value::insert(const std::string &key, const PGStore::Value &value){
+void GPStore::Value::insert(const std::string &key, const GPStore::Value &value){
     assert(type_ == MAP);
     data_.Map->insert(make_pair(key, ValueDeepCopy(&value)));
 }
 
-PGStore::Value * PGStore::Value::search(const std::string &key){
+GPStore::Value * GPStore::Value::search(const std::string &key){
     assert(type_ == MAP);
     auto end = data_.Map->end();
     auto it = data_.Map->find(key);
@@ -295,7 +295,7 @@ PGStore::Value * PGStore::Value::search(const std::string &key){
     }
 }
 
-PGStore::uint_64 PGStore::Value::size(){
+GPStore::uint_64 GPStore::Value::size(){
     if(type_ == STRING){
         return data_.String->size();
     }else if(type_ == LIST){
@@ -307,73 +307,73 @@ PGStore::uint_64 PGStore::Value::size(){
     }
 }
 
-std::string PGStore::Value::toString() const {
+std::string GPStore::Value::toString() const {
     switch (type_)
     {
-        case PGStore::Value::INTEGER:
+        case GPStore::Value::INTEGER:
             return to_string(data_.Int);
-        case PGStore::Value::FLOAT:
+        case GPStore::Value::FLOAT:
             return to_string(data_.Float);
-        case PGStore::Value::STRING:
+        case GPStore::Value::STRING:
             return *data_.String;
-        case PGStore::Value::BOOLEAN:
+        case GPStore::Value::BOOLEAN:
             return data_.Boolean ? "true" : "false";
-        case PGStore::Value::NODE:
+        case GPStore::Value::NODE:
             return string("Node(") + to_string(data_.Node) + ")";
-        case PGStore::Value::EDGE:
+        case GPStore::Value::EDGE:
             return string("Edge(") + to_string(data_.Edge) + ")";
-        case PGStore::Value::PATH:
+        case GPStore::Value::PATH:
             return "PATH";
-        case PGStore::Value::LIST:
+        case GPStore::Value::LIST:
             return "LIST";
-        case PGStore::Value::MAP:
+        case GPStore::Value::MAP:
             return "<MAP>";
-        case PGStore::Value::NO_VALUE:
+        case GPStore::Value::NO_VALUE:
             return "null";
     }
     return "";   //make g++ happy
 }
 
-PGStore::Value * PGStore::Value::ValueDeepCopy(const Value *value){
+GPStore::Value * GPStore::Value::ValueDeepCopy(const Value *value){
     Value::Type ty = value->type_;
     Value *new_elem = nullptr;
     switch (ty)
     {
-        case PGStore::Value::INTEGER:
-            new_elem = new PGStore::Value(value->data_.Int);
+        case GPStore::Value::INTEGER:
+            new_elem = new GPStore::Value(value->data_.Int);
             break;
-        case PGStore::Value::FLOAT:
-            new_elem = new PGStore::Value(value->data_.Float);
+        case GPStore::Value::FLOAT:
+            new_elem = new GPStore::Value(value->data_.Float);
             break;
-        case PGStore::Value::STRING:
-            new_elem = new PGStore::Value(*value->data_.String);
+        case GPStore::Value::STRING:
+            new_elem = new GPStore::Value(*value->data_.String);
             break;
-        case PGStore::Value::BOOLEAN:
-            new_elem = new PGStore::Value(value->data_.Boolean);
+        case GPStore::Value::BOOLEAN:
+            new_elem = new GPStore::Value(value->data_.Boolean);
             break;
-        case PGStore::Value::NODE:
-            new_elem = new PGStore::Value(Value::NODE, value->data_.Node);
+        case GPStore::Value::NODE:
+            new_elem = new GPStore::Value(Value::NODE, value->data_.Node);
             break;
-        case PGStore::Value::EDGE:
-            new_elem = new PGStore::Value(Value::EDGE, value->data_.Edge);
+        case GPStore::Value::EDGE:
+            new_elem = new GPStore::Value(Value::EDGE, value->data_.Edge);
             break;
-        case PGStore::Value::PATH:
-            new_elem = new PGStore::Value(value->data_.Path->node_id_, value->data_.Path->edge_id_, value->data_.Path->edge_type_);
+        case GPStore::Value::PATH:
+            new_elem = new GPStore::Value(value->data_.Path->node_id_, value->data_.Path->edge_id_, value->data_.Path->edge_type_);
             break;
-        case PGStore::Value::LIST:
-            new_elem = new PGStore::Value(Value::LIST);
+        case GPStore::Value::LIST:
+            new_elem = new GPStore::Value(Value::LIST);
             for(const Value * v: *value->data_.List){
                 new_elem->data_.List->push_back(ValueDeepCopy(v));
             }
             break;
-        case PGStore::Value::MAP:
-            new_elem = new PGStore::Value(PGStore::Value::MAP);
+        case GPStore::Value::MAP:
+            new_elem = new GPStore::Value(GPStore::Value::MAP);
             for(const auto &p : *value->data_.Map){
                 new_elem->data_.Map->insert(make_pair(p.first, ValueDeepCopy(p.second)));
             }
             break;
-        case PGStore::Value::NO_VALUE:
-            new_elem = new PGStore::Value(PGStore::Value::NO_VALUE);
+        case GPStore::Value::NO_VALUE:
+            new_elem = new GPStore::Value(GPStore::Value::NO_VALUE);
             break;
     }
     return new_elem;
@@ -381,31 +381,31 @@ PGStore::Value * PGStore::Value::ValueDeepCopy(const Value *value){
 
 //--------------------Private--------------------//
 
-void PGStore::Value::ConstructFrom(const PGStore::Value& other){
+void GPStore::Value::ConstructFrom(const GPStore::Value& other){
     // called when no string, path, list, map is allocated.
     // we neednot free them
     type_ = other.type_;
     switch (type_)
     {
-        case PGStore::Value::INTEGER:
+        case GPStore::Value::INTEGER:
             data_.Int = other.data_.Int;
             break;
-        case PGStore::Value::FLOAT:
+        case GPStore::Value::FLOAT:
             data_.Float = other.data_.Float;
             break;
-        case PGStore::Value::STRING:
+        case GPStore::Value::STRING:
             data_.String = new string(*other.data_.String);
             break;
-        case PGStore::Value::BOOLEAN:
+        case GPStore::Value::BOOLEAN:
             data_.Boolean = other.data_.Boolean;
             break;
-        case PGStore::Value::NODE:
+        case GPStore::Value::NODE:
             data_.Node = other.data_.Node;
             break;
-        case PGStore::Value::EDGE:
+        case GPStore::Value::EDGE:
             data_.Edge = other.data_.Edge;
             break;
-        case PGStore::Value::PATH:
+        case GPStore::Value::PATH:
             data_.Path = new PathContent();
             for(auto node : other.data_.Path->node_id_){
                 data_.Path->node_id_.push_back(node);
@@ -417,25 +417,25 @@ void PGStore::Value::ConstructFrom(const PGStore::Value& other){
                 data_.Path->edge_type_.push_back(ty);
             }
             break;
-        case PGStore::Value::LIST:
+        case GPStore::Value::LIST:
             data_.List = new vector<Value *>();
-            for(const PGStore::Value *v : *other.data_.List){
+            for(const GPStore::Value *v : *other.data_.List){
                 data_.List->push_back(ValueDeepCopy(v));
             }
             break;
-        case PGStore::Value::MAP:
+        case GPStore::Value::MAP:
             data_.Map = new map<std::string, Value *>();
             for(const auto &p : *other.data_.Map){
                 data_.Map->insert(make_pair(p.first, ValueDeepCopy(p.second)));
             }
             break;
-        case PGStore::Value::NO_VALUE:
+        case GPStore::Value::NO_VALUE:
             break;
     }
     return;
 }
 
-bool PGStore::Value::CompareIntWith(const PGStore::Value &other) const{
+bool GPStore::Value::CompareIntWith(const GPStore::Value &other) const{
     Type ty = other.getType();
     if(ty == INTEGER ){
         return data_.Int < other.data_.Int;
@@ -452,7 +452,7 @@ bool PGStore::Value::CompareIntWith(const PGStore::Value &other) const{
     }
 }
 
-bool PGStore::Value::CompareFloatWith(const Value &other) const{
+bool GPStore::Value::CompareFloatWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == INTEGER ){
         if(isinf(data_.Float) == 1 || isnan(data_.Float))
@@ -478,7 +478,7 @@ bool PGStore::Value::CompareFloatWith(const Value &other) const{
     }
 }
 
-bool PGStore::Value::CompareStringWith(const Value &other) const{
+bool GPStore::Value::CompareStringWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == STRING){
         return *data_.String < *other.data_.String;
@@ -489,7 +489,7 @@ bool PGStore::Value::CompareStringWith(const Value &other) const{
     }
 }
 
-bool PGStore::Value::CompareBooleanWith(const Value &other) const{
+bool GPStore::Value::CompareBooleanWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == INTEGER || ty == FLOAT || ty == NO_VALUE) {
         return true;
@@ -500,7 +500,7 @@ bool PGStore::Value::CompareBooleanWith(const Value &other) const{
     }
 }
 
-bool PGStore::Value::CompareNodeWith(const Value &other) const{
+bool GPStore::Value::CompareNodeWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == MAP){
         return false;
@@ -511,7 +511,7 @@ bool PGStore::Value::CompareNodeWith(const Value &other) const{
     }
 }
 
-bool PGStore::Value::CompareEdgeWith(const Value &other) const{
+bool GPStore::Value::CompareEdgeWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == MAP || ty == NODE){
         return false;
@@ -522,7 +522,7 @@ bool PGStore::Value::CompareEdgeWith(const Value &other) const{
     }
 }
 
-bool PGStore::Value::ComparePathWith(const Value &other) const{
+bool GPStore::Value::ComparePathWith(const Value &other) const{
     int m = data_.Path->edge_id_.size(), n = other.data_.Path->edge_id_.size();
     int l = m < n ? m : n;
     for(int i = 0; i < l; ++i){
@@ -536,7 +536,7 @@ bool PGStore::Value::ComparePathWith(const Value &other) const{
     return m < n;
 }
 
-bool PGStore::Value::CompareListWith(const Value &other) const{
+bool GPStore::Value::CompareListWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == MAP || ty == NODE || ty == EDGE){
         return false;
@@ -555,7 +555,7 @@ bool PGStore::Value::CompareListWith(const Value &other) const{
     return m < n;
 }
 
-bool PGStore::Value::CompareMapWith(const Value &other) const{
+bool GPStore::Value::CompareMapWith(const Value &other) const{
     Type ty = other.getType();
     if(ty != MAP)
         return true;
@@ -563,38 +563,38 @@ bool PGStore::Value::CompareMapWith(const Value &other) const{
     return false;
 }
 
-bool PGStore::Value::CompareNoValueWith(const Value &other) const{
+bool GPStore::Value::CompareNoValueWith(const Value &other) const{
     return false;
 }
 
 
-bool PGStore::Value::IntEqualTo(const Value &other) const{
+bool GPStore::Value::IntEqualTo(const Value &other) const{
     return other.getType() == INTEGER && data_.Int == other.data_.Int ||
         other.getType() == FLOAT && data_.Int == other.data_.Float;
 }
 
-bool PGStore::Value::FloatEqualTo(const Value &other) const{
+bool GPStore::Value::FloatEqualTo(const Value &other) const{
     return other.getType() == FLOAT && data_.Float == other.data_.Float ||
         other.getType() == INTEGER && data_.Float == other.data_.Int;
 }
 
-bool PGStore::Value::StringEqualTo(const Value &other) const{
+bool GPStore::Value::StringEqualTo(const Value &other) const{
     return other.getType() == STRING && *data_.String == *other.data_.String;
 }
 
-bool PGStore::Value::BooleanEqualTo(const Value &other) const{
+bool GPStore::Value::BooleanEqualTo(const Value &other) const{
     return other.getType() == BOOLEAN && data_.Boolean == other.BOOLEAN;
 }
 
-bool PGStore::Value::NodeEqualTo(const Value &other) const{
+bool GPStore::Value::NodeEqualTo(const Value &other) const{
     return other.getType() == NODE && other.data_.Node == data_.Node;
 }
 
-bool PGStore::Value::EdgeEqualTo(const Value &other) const{
+bool GPStore::Value::EdgeEqualTo(const Value &other) const{
     return other.getType() == EDGE && data_.Edge == other.data_.Edge;
 }
 
-bool PGStore::Value::PathEqualTo(const Value &other) const{
+bool GPStore::Value::PathEqualTo(const Value &other) const{
     // just check [n0 e1 n1 e2 n2 .. ek nk]
     if(other.data_.Path->edge_id_.size() != data_.Path->edge_id_.size()) return false;
     uint_64 n = data_.Path->edge_id_.size();
@@ -609,7 +609,7 @@ bool PGStore::Value::PathEqualTo(const Value &other) const{
     return other.data_.Path->node_id_[n] == data_.Path->node_id_[n];
 }
 
-bool PGStore::Value::ListEqualTo(const Value &other) const{
+bool GPStore::Value::ListEqualTo(const Value &other) const{
     uint_64 n = data_.List->size();
     if(other.data_.List->size() != n){
         return false;
@@ -622,7 +622,7 @@ bool PGStore::Value::ListEqualTo(const Value &other) const{
     return true;
 }
 
-bool PGStore::Value::MapEqualTo(const Value &other) const{
+bool GPStore::Value::MapEqualTo(const Value &other) const{
     uint_64 m = data_.Map->size(), n = other.data_.Map->size();
     if(m != n) {
         return false;
@@ -638,11 +638,11 @@ bool PGStore::Value::MapEqualTo(const Value &other) const{
     return true;
 }
 
-bool PGStore::Value::NoValueEqualTo(const Value &other) const{
+bool GPStore::Value::NoValueEqualTo(const Value &other) const{
     return other.getType() == NO_VALUE;
 }
 
-void PGStore::Value::Destruct(){
+void GPStore::Value::Destruct(){
     switch (type_)
     {
         case Value::STRING:
