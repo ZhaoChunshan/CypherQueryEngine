@@ -341,18 +341,21 @@ void GPStore::Literal::print(int dep) const{
 /* class: Parameter */
 
 GPStore::Parameter::Parameter(){
-
+    atom_type_ = PARAMETER;
 }
 
 GPStore::Parameter::Parameter(unsigned n){
+    atom_type_ = PARAMETER;
     parameter_num = n;
 }
 
 GPStore::Parameter::Parameter(const std::string &sym_name){
+    atom_type_ = PARAMETER;
     symbolic_name = sym_name;
 }
 
 GPStore::Parameter::Parameter(const Parameter& that){
+    this->atom_type_ = that.atom_type_;
     symbolic_name = that.symbolic_name;
     parameter_num = that.parameter_num;
 }
@@ -371,11 +374,18 @@ void GPStore::Parameter::print(int dep) const{
 
 /* class: CaseExpression */
 
-GPStore::CaseExpression::CaseExpression(): test_expr(nullptr), else_expr(nullptr) { }
+GPStore::CaseExpression::CaseExpression(): test_expr(nullptr), else_expr(nullptr) { 
+    atom_type_ = CASE_EXPRESSION;
+}
 
-GPStore::CaseExpression::CaseExpression(CaseType ct): case_type(ct), test_expr(nullptr), else_expr(nullptr) { }
+GPStore::CaseExpression::CaseExpression(CaseType ct): case_type(ct), test_expr(nullptr), else_expr(nullptr) {
+    atom_type_ = CASE_EXPRESSION;
+}
 
 GPStore::CaseExpression::CaseExpression(const CaseExpression &that):test_expr(nullptr), else_expr(nullptr){
+    atom_type_ = that.atom_type_;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
     case_type = that.case_type;
     if(that.case_type == SIMPLE){
         test_expr = new Expression(*that.test_expr);
@@ -551,15 +561,18 @@ void GPStore::PatternComprehension::print(int dep)  const {
 }
 
 GPStore::Quantifier::Quantifier():container_(nullptr), exp_(nullptr){
-
+    atom_type_ = QUANTIFIER;
 }
 
 
 GPStore::Quantifier::Quantifier(QuantifierType qt):container_(nullptr), exp_(nullptr), quantifier_type_(qt){
-
+    atom_type_ = QUANTIFIER;
 }
 
 GPStore::Quantifier::Quantifier(const Quantifier& that):container_(nullptr), exp_(nullptr) {
+    atom_type_ = that.atom_type_;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
     var_name_ = that.var_name_;
     quantifier_type_ = that.quantifier_type_;
     if(that.container_ != nullptr){
@@ -627,10 +640,13 @@ void GPStore::PatternPredicate::print(int dep) const {
 
 
 GPStore::FunctionInvocation::FunctionInvocation():distinct(false){
-
+    atom_type_ = FUNCTION_INVOCATION;
 }
 
 GPStore::FunctionInvocation::FunctionInvocation(const FunctionInvocation& that){
+    atom_type_ = that.atom_type_;
+    covered_vars_ = that.covered_vars_;
+    covered_vars_id_ = that.covered_vars_id_;
     func_name_ = that.func_name_;
     distinct = that.distinct;
     for(auto e : that.args){
