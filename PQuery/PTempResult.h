@@ -1,12 +1,10 @@
 #include <vector>
 #include <map>
 #include <string>
-#include "../Value/src/Value.h"
+#include "../Value/Value.h"
 #include "Varset.h"
 using NodeIdType = unsigned long long;
 using EdgeIdType = unsigned long long;
-
-
 
 class PTempResult {
 public:
@@ -18,7 +16,7 @@ public:
     class Record{
         std::vector<NodeIdType> nodes_id_;
         std::vector<EdgeIdType> edges_id_;
-        std::vector<PGStore::Value> values_;
+        std::vector<GPStore::Value> values_;
         Record();
         Record(const Record& that);
         Record& operator=(const Record& that);
