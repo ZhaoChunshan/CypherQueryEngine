@@ -46,7 +46,7 @@ class EdgePattern{
 public:
     // Only SPARQL has constant
     enum EdgePatternType { EDGE_VAR, EDGE_CONST };
-    enum EdgeArrowType { LFET_ARROW, RIGHT_ARROW, UNDIRECTED };
+    enum EdgeArrowType { LEFT_ARROW, RIGHT_ARROW, UNDIRECTED };
 
     EdgePatternType type_;
     EdgeArrowType arrow_direction_;
@@ -66,7 +66,7 @@ public:
     static const unsigned long long RANGE_INF = 0xffffffffffffffffULL;
 
     // used for node_var and edge_var
-    std::vector<std::string> labels_or_types_;
+    std::vector<std::string> edge_types_;
 
     // for update clauses, may be parameters, e.g. CREATE (a $1)
     std::map<std::string, GPStore::Expression> properties_;
