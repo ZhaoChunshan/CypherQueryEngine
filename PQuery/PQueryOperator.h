@@ -9,7 +9,7 @@ class PQueryOperator{
 public:
     enum OperatorType {
         BGP, AND, OPTIONAL, UNION, MINUS,
-         FILTER, SHORTEST_PATH,
+        FILTER, SHORTEST_PATH,
         PROJECTION, ORDER_BY,
         // Not implement. 
         GROUP_BY, HAVING, AGGREGATION, SCOPE ,BIND, TABEL,
@@ -32,30 +32,40 @@ public:
     /* only used for operator union */
     UnionType union_ty_;
 
-    /* only used for filter, the var occurs in the exp is string not id
-     * exp = f1 AND f2 AND f3 ... AND fn */
+    /* Mainly used for filter, the var occurs in the exp is string not id
+     * exp = f1 AND f2 AND f3 ... AND fn 
+     * We can inject Filters to other Node such as BGP , AND */
     std::vector<GPStore::Expression> filters_;
 
     /* only used for shortestPath */
     bool is_all_shortest_;
-    std::string src_, tgt_;
+    std::string src_, tgt_, path_name_;
     GPStore::EdgePattern edge_pattern_;
 
     /* only used for projection */
     std::vector<GPStore::Expression> proj_exps_;
-    Varset rename_cols_;
+    std::vector<std::string> var_name_;
 
     /* only used for order by */
-    Varset sorted_vars_;
+    std::vector<GPStore::Expression> order_exps_;
     std::vector<OrderType> order_tys_;
     int skip, limit;
     
     PQueryOperator();
+    PQueryOperator(OperatorType op_type);
     PQueryOperator(const PQueryOperator& that);
     PQueryOperator& operator=(const PQueryOperator& that);
     
     void release();
     ~PQueryOperator();
 
-    void print() const;
+    void print(int dep) const;
+public:
+    /* Merge two BGP and their edge conflict and filters are remained. */
+    static PQueryOperator * mergeBGP(const PQueryOperator &bgp1, const PQueryOperator &bgp2);
+
+    /* Partition a BGP to Connected Component: e.g. BGP = BGP1 AND BGP2 AND BGP3*/
+    static PQueryOperator * partitionConnectedComponent(const PQueryOperator &bgp);
+
+private:
 };
