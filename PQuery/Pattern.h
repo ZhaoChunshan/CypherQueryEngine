@@ -87,6 +87,12 @@ public:
 
 // Support both SPARQL Triple Pattern && Cypher Path Pattern
 class RigidPattern{
+    // only named path var has var_name
+    std::string var_name_;
+    // only named path var has var_id
+    unsigned var_id_;
+
+    bool is_anno_var_;
 
     std::vector<NodePattern> nodes_;
     std::vector<EdgePattern> edges_;
