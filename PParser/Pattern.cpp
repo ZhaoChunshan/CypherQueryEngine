@@ -30,6 +30,7 @@ GPStore::NodePattern::operator=(const NodePattern& that){
     var_id_ = that.var_id_;
     labels_ = that.labels_;
     properties_ = that.properties_;
+    return *this;
 }
 
 GPStore::NodePattern::~NodePattern(){
@@ -97,6 +98,7 @@ GPStore::EdgePattern& GPStore::EdgePattern::operator=(const EdgePattern& that){
     range_right_ = that.range_right_;
     edge_types_ = that.edge_types_;
     properties_ = that.properties_;
+    return *this;
 }
 
 GPStore::EdgePattern::~EdgePattern(){
@@ -154,6 +156,7 @@ GPStore::RigidPattern& GPStore::RigidPattern::operator=(const RigidPattern& that
     covered_node_vars_ = that.covered_node_vars_;
     covered_edge_vars_ = that.covered_edge_vars_;
     covered_vars_ = that.covered_vars_;
+    return *this;
 }
 
 GPStore::RigidPattern::~RigidPattern(){

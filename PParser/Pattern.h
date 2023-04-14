@@ -1,8 +1,11 @@
+#ifndef PATTERN_H
+#define PATTERN_H
+
 #include <string>
 #include <vector>
 #include <map>
 #include "../Value/Expression.h"
-#include "Varset.h"
+
 
 namespace GPStore{
 
@@ -87,6 +90,7 @@ public:
 
 // Support both SPARQL Triple Pattern && Cypher Path Pattern
 class RigidPattern{
+public:
     // only named path var has var_name
     std::string var_name_;
     // only named path var has var_id
@@ -110,3 +114,5 @@ class RigidPattern{
 };
 
 } // namespace GPStore
+
+#endif
