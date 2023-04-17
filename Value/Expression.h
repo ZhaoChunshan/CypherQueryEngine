@@ -14,7 +14,7 @@ class Atom;
  * 表达式类
  * oprt!= EMPTY_OP，则内部结点，关注oprt和children
  * oprt== EMPTY_OP，则叶子节点，关注atom（以及可能的property_label)
- * 逻辑运算符OR XOR AND NOT组织成多叉树(e.g. 多个孩子用AND连起来)
+ * 逻辑运算符OR XOR AND 组织成多叉树(e.g. 多个孩子用AND连起来)
  * 其他的运算符组织成二叉树(i.e. children.size() == 2)
 */
 class Expression{
@@ -83,7 +83,7 @@ public:
 class Atom{
 public:
 	enum AtomType{LITERAL, PARAMETER, CASE_EXPRESSION, COUNT, LIST_COMPREHENSION, PATTERN_COMPREHENSION,
-	QUANTIFIER, PATTERN_PREDICATE, FUNCTION_INVOCATION, EXISTENTIAL_SUBQUERY, VARIABLE};
+	QUANTIFIER, PATTERN_PREDICATE, FUNCTION_INVOCATION, EXISTENTIAL_SUBQUERY, VARIABLE,PARENTHESIZED_EXPRESSION};
 	AtomType atom_type_;
     Varset covered_vars_;
     std::vector<unsigned> covered_vars_id_;
@@ -263,5 +263,15 @@ public:
     void print(int dep) const override;
 };
 
+class ParenthesizedExpression: public Atom{
+public:
+    Expression *exp_;
+    ParenthesizedExpression();
+    ParenthesizedExpression(const ParenthesizedExpression& that);
+    ~ParenthesizedExpression();
+
+    void encode(const std::map<std::string, unsigned>& var2id) override;
+    void print(int dep) const override;
+};
 
 }   // namespace GPStore

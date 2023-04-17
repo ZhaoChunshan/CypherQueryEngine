@@ -139,7 +139,8 @@ void GPStore::Expression::release(){
             delete property_label_;
     }else{
         for(Expression *e : children_)
-            delete e;
+            if(e != nullptr)
+                delete e;
         std::vector<Expression*>().swap(children_);
     }
     
@@ -407,9 +408,11 @@ GPStore::CaseExpression::CaseExpression::~CaseExpression(){
     if(test_expr != nullptr)
         delete test_expr;
     for(Expression *e : when_exprs)
-        delete e;
+        if(e != nullptr)
+            delete e;
     for(Expression *e : then_exprs)
-        delete e;
+        if(e != nullptr)
+            delete e;
     if(else_expr != nullptr)
         delete else_expr;
 }
@@ -658,7 +661,8 @@ GPStore::FunctionInvocation::FunctionInvocation(const FunctionInvocation& that){
 
 GPStore::FunctionInvocation::~FunctionInvocation(){
     for(Expression *e : args)
-        delete e;
+        if(e != nullptr)
+            delete e;
 }
 
 void GPStore::FunctionInvocation::encode(const std::map<std::string, unsigned>& var2id) {
@@ -747,4 +751,32 @@ void GPStore::Variable::encode(const std::map<std::string, unsigned>& var2id){
 void GPStore::Variable::print(int dep) const {
     Expression::printHead(dep, "Variable: ", false, false);
     printf("%s\n", var_.c_str());
+}
+
+
+GPStore::ParenthesizedExpression::ParenthesizedExpression(){
+    atom_type_ = PARENTHESIZED_EXPRESSION;
+    exp_ = nullptr;
+}
+
+GPStore::ParenthesizedExpression::ParenthesizedExpression(const ParenthesizedExpression& that){
+    atom_type_ = that.atom_type_;
+    exp_ = new Expression(*that.exp_);
+}
+
+GPStore::ParenthesizedExpression::~ParenthesizedExpression(){
+    if(exp_ != nullptr)
+        delete exp_;
+}
+
+void GPStore::ParenthesizedExpression::encode(const std::map<std::string, unsigned>& var2id){
+    for(const auto& s : covered_vars_.vars){
+        covered_vars_id_.push_back(var2id.at(s));
+    }
+    exp_->encode(var2id);
+}
+
+void GPStore::ParenthesizedExpression::print(int dep) const {
+    Expression::printHead(dep, "ParenthesizedExpression", true, true);
+    exp_->print(dep + 1);
 }
