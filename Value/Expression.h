@@ -1,7 +1,6 @@
 #ifndef VALUE_EXPRESSION_H
 #define VALUE_EXPRESSION_H
 
-
 #include <string>
 #include <vector>
 #include <map>
@@ -50,7 +49,11 @@ public:
     Varset covered_vars_;
     // 解析完，执行中，给当前的WithBlock中的变量分配的ID。运行中变量的id，并不是sid oid eid这种。
     std::vector<unsigned> covered_vars_id_; 
-    
+    // 属性覆盖集合 a.age
+    std::set<std::pair<std::string, std::string>> covered_props_;
+    // pair< varid(a) . propid(age)> (未实现，因为需要调用PStore.)
+    std::set<std::pair<unsigned, unsigned>> covered_props_id_;
+
     Expression();
     Expression(const Expression& that);
     Expression& operator=(const Expression& that);
@@ -58,7 +61,10 @@ public:
     void release();
     
     bool isAtom() const;
-
+    bool isVariable() const;
+    /* if this is variable, return its name */
+    std::string getVariableName() const;
+    
     /* 将表达式树中所有的变量赋予变量的id，同时获得covered_vars_id_ */
     void encode(const std::map<std::string, unsigned>& var2id);
 
@@ -91,6 +97,10 @@ public:
 	AtomType atom_type_;
     Varset covered_vars_;
     std::vector<unsigned> covered_vars_id_;
+    // 属性覆盖集合 a.age
+    std::set<std::pair<std::string, std::string>> covered_props_;
+    std::set<std::pair<unsigned, unsigned>> covered_props_id_;
+
     Atom() = default;
     virtual ~Atom() = default;
     virtual void encode(const std::map<std::string, unsigned>& var2id) = 0;

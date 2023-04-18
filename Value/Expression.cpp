@@ -155,6 +155,14 @@ bool GPStore::Expression::isAtom() const{
     return oprt_ == EMPTY_OP;
 }
 
+bool GPStore::Expression::isVariable() const{
+    return oprt_ == EMPTY_OP && atom_ != nullptr && atom_->atom_type_ == Atom::VARIABLE;
+}
+
+std::string GPStore::Expression::getVariableName() const{
+    return dynamic_cast<GPStore::Variable *>(atom_)->var_;
+}
+
 void GPStore::Expression::encode(const std::map<std::string, unsigned>& var2id){
     if(isAtom()){
         atom_->encode(var2id);
