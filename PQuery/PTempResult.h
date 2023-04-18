@@ -1,3 +1,6 @@
+#ifndef PTEMPRESULT_H
+#define PTEMPRESULT_H
+
 #include <vector>
 #include <map>
 #include <string>
@@ -34,4 +37,4 @@ public:
 };
 
 
-
+#endif

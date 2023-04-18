@@ -1,3 +1,6 @@
+#ifndef PQUERYOPERATOR_H
+#define PQUERYOPERATOR_H
+
 #include <vector>
 #include <string>
 #include <set>
@@ -69,3 +72,5 @@ public:
 
 private:
 };
+
+#endif

@@ -5,6 +5,8 @@
 # Last Modified: 2017-03-10
 # Description:
 =============================================================================*/
+#ifndef PQUERY_VARSET_H
+#define PQUERY_VARSET_H
 
 #include <string>
 #include <vector>
@@ -38,3 +40,4 @@ class Varset
 };
 
 
+#endif
