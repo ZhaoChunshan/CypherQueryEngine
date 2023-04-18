@@ -2,11 +2,14 @@
 // ./test
 #include "Value.h"
 #include "Expression.h"
+#include "PCypherParser.h"
+#include <fstream>
 #include <memory>
 #include <algorithm>
 #include <iostream>
 using namespace std;
 
+std::string QueryPath = "../Queries/";
 
 /* 测试一：对IntValue * 排序 */
 int test1(){
@@ -104,13 +107,28 @@ int test6(){
     exp2->atom_ = new GPStore::Variable(string("Var2"));
     exp.children_.push_back(exp1);
     exp.children_.push_back(exp2);
-    exp.print(0);
+    // exp.print(0);
+    return 0;
+}
+
+/* 测试七: 抽象语法树 */
+int test7(){
+    PCypherParser parser;
+    std::ifstream fin(QueryPath + "/interactive-complex-10.cypher");
+    CypherAST *ast = nullptr;
+    try{
+        ast = parser.CypherParse(fin);
+        ast->print(0);
+    } catch (const runtime_error& e){
+        cout << e.what() << endl;
+    }
+    
     return 0;
 }
 
 int main(){
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6};
-    for(int i = 0; i < 6; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7};
+    for(int i = 0; i < 7; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {
