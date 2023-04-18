@@ -103,9 +103,9 @@ void WithReturnAST::print(int dep) const{
         GPStore::Expression::printHead(dep + 1, "ProjectionItems");
         for(int i = 0; i < proj_exp_.size(); ++i){
             proj_exp_[i]->print(dep + 2);
-            if(var_name_[i] != ""){
+            if(alias_[i] != ""){
                 GPStore::Expression::printHead(dep + 2, "AS ", false, false);
-                printf("%s\n",var_name_[i].c_str());
+                printf("%s\n",alias_[i].c_str());
             }
         }
     }

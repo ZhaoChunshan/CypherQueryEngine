@@ -17,7 +17,7 @@ GPStore::NodePattern::NodePattern(std::string _constant_str):type_(NODE_CONST), 
 }
 
 GPStore::NodePattern::NodePattern(const NodePattern& that):type_(that.type_), is_anno_var_(that.is_anno_var_), \
-var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), labels_(that.labels_), properties_(that.properties_){
+var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), labels_(that.labels_), properties_(that.properties_), param_str_(that.param_str_){
 
 }
 
@@ -54,7 +54,10 @@ void GPStore::NodePattern::print() const{
             std::printf("%s:\n", p.first);
             p.second.print(0);
         }
-    }else{
+    } else if(param_str_.size() != 0){
+        std::printf("  $%s)\n", param_str_.c_str());
+    }
+    else{
         std::printf(")\n");
     }
 }
@@ -142,12 +145,14 @@ GPStore::RigidPattern::RigidPattern(){
 
 }
 
-GPStore::RigidPattern::RigidPattern(const RigidPattern& that):var_name_(that.var_name_), var_id_(that.var_id_), is_anno_var_(that.is_anno_var_),
+GPStore::RigidPattern::RigidPattern(const RigidPattern& that):type_(that.type_),
+var_name_(that.var_name_), var_id_(that.var_id_), is_anno_var_(that.is_anno_var_),
 nodes_(that.nodes_), edges_(that.edges_), covered_node_vars_(that.covered_node_vars_), covered_edge_vars_(that.covered_edge_vars_), covered_vars_(that.covered_vars_){
 
 }
 
 GPStore::RigidPattern& GPStore::RigidPattern::operator=(const RigidPattern& that){
+    type_ = that.type_;
     var_name_ = that.var_name_;
     var_id_ = that.var_id_;
     is_anno_var_ = that.is_anno_var_;

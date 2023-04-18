@@ -60,7 +60,7 @@ class QueryUnitAST{
 public:
 	std::vector<std::unique_ptr<ReadingAST>> reading_;
 	std::vector<std::unique_ptr<UpdatingAST>> updating_;
-	std::unique_ptr<WithReturnAST> with_return_;	
+	std::unique_ptr<WithReturnAST> with_return_;
     QueryUnitAST() = default;
     ~QueryUnitAST() = default;
     void print(int dep) const;
@@ -80,7 +80,7 @@ public:
 	enum UpdatingForm{CREATE, MERGE, DELETE, SET, REMOVE};
 	UpdatingForm updating_form_;
     UpdatingAST() = default;
-    ~UpdatingAST() { };
+    virtual ~UpdatingAST() { };
     virtual void print(int dep) const = 0;
 };
 
@@ -122,7 +122,7 @@ public:
 	std::unique_ptr<GPStore::Expression> where_;
     
     InQueryCallAST(){reading_form_ = INQUERY_CALL;}
-    ~InQueryCallAST();
+    ~InQueryCallAST()= default;
     
     void print(int dep) const override;
 };
@@ -135,7 +135,7 @@ class CreateAST: public UpdatingAST{
 public:
 	std::vector<GPStore::RigidPattern> pattern_;
     CreateAST() {updating_form_ = CREATE;}
-    ~CreateAST();
+    ~CreateAST()= default;
     void print(int dep) const override;
 };
 
@@ -145,7 +145,7 @@ public:
     std::vector<bool> is_on_match_;
 	std::vector<std::unique_ptr<SetAST>> set_actions_;
     MergeAST(){updating_form_ = MERGE;}
-    ~MergeAST();
+    ~MergeAST()= default;
     void print(int dep) const override;
 };
 
@@ -154,7 +154,7 @@ public:
 	bool detach;
 	std::vector<std::unique_ptr<GPStore::Expression>> exp_;
     DeleteAST(){updating_form_ = DELETE;}
-    ~DeleteAST();
+    ~DeleteAST()= default;
     void print(int dep) const override;
 };
 
@@ -162,7 +162,7 @@ class SetAST: public UpdatingAST{
 public:
 	std::vector<std::unique_ptr<SetItemAST>> set_items_;
     SetAST(){updating_form_ = SET;}
-    ~SetAST();
+    ~SetAST()= default;
     void print(int dep) const override;
 };
 
@@ -171,7 +171,7 @@ class RemoveAST: public UpdatingAST{
 public:
 	std::vector<std::unique_ptr<RemoveItemAST> > remove_items_;
     RemoveAST(){updating_form_ = REMOVE;};
-    ~RemoveAST();;
+    ~RemoveAST()= default;
     void print(int dep) const override;
 };
 
@@ -182,15 +182,16 @@ public:
 	bool distinct_;
 	bool asterisk_;
 	std::vector<std::unique_ptr<GPStore::Expression>> proj_exp_;
-    std::vector<std::string> proj_exp_text_;   // 存放表达式文本，匿名的RETURN的表达式，以此为列名
-	std::vector<std::string> var_name_;
+    std::vector<std::string> proj_exp_text_;    // 存放表达式文本，匿名的RETURN的表达式，以此为列名
+	std::vector<std::string> alias_;            // 重命名，为""则无名
+    std::vector<std::string> column_name_;      // 最终名字
 	std::unique_ptr<GPStore::Expression> skip_;
 	std::unique_ptr<GPStore::Expression> limit_;
 	std::vector<std::unique_ptr<GPStore::Expression>> order_by_;	// 排序的变量名
 	std::vector<bool> ascending_;	// 是否升序
 	std::unique_ptr<GPStore::Expression> where_;
-    WithReturnAST();
-    ~WithReturnAST();
+    WithReturnAST()= default;
+    ~WithReturnAST()= default;
     void print(int dep) const;
 };
 
@@ -214,8 +215,8 @@ public:
 	std::string var_name_;
 	std::unique_ptr<GPStore::Expression> rval_;
 	std::vector<std::string> rlabels_;
-    SetItemAST();
-    ~SetItemAST();
+    SetItemAST() = default;
+    ~SetItemAST() = default;
     void print(int dep) const;
 };
 
@@ -226,8 +227,8 @@ public:
 	std::string var_name_;
 	std::vector<std::string> labels_;
 	std::unique_ptr<GPStore::Expression> prop_exp_;
-    RemoveItemAST();
-    ~RemoveItemAST();
+    RemoveItemAST()= default;
+    ~RemoveItemAST()= default;
     void print(int dep) const;
 };
 

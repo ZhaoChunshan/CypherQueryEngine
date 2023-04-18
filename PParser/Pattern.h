@@ -1,5 +1,5 @@
-#ifndef PATTERN_H
-#define PATTERN_H
+#ifndef PPARSER_PATTERN_H
+#define PPARSER_PATTERN_H
 
 #include <string>
 #include <vector>
@@ -29,8 +29,9 @@ public:
     // used for node_var and edge_var
     std::vector<std::string> labels_;
 
-    // for update clauses, may be parameters, e.g. CREATE (a $1)
+    // for update clauses, may be parameters, e.g. CREATE (a $prop)
     std::map<std::string, GPStore::Expression> properties_;
+    std::string param_str_;
 
     NodePattern();
     NodePattern(bool _is_anno, std::string var_name, unsigned _var_id);
@@ -49,7 +50,7 @@ class EdgePattern{
 public:
     // Only SPARQL has constant
     enum EdgePatternType { EDGE_VAR, EDGE_CONST };
-    enum EdgeArrowType { LEFT_ARROW, RIGHT_ARROW, UNDIRECTED };
+    enum EdgeArrowType { LEFT_ARROW, RIGHT_ARROW, LEFT_RIGHT_ARROW, UNDIRECTED };
 
     EdgePatternType type_;
     EdgeArrowType arrow_direction_;
@@ -73,7 +74,7 @@ public:
 
     // for update clauses, may be parameters, e.g. CREATE (a $1)
     std::map<std::string, GPStore::Expression> properties_;
-
+    std::string param_str_;
     EdgePattern();
     EdgePattern(bool is_anno, std::string _var_name, unsigned _var_id, EdgeArrowType _direction);
     EdgePattern(bool is_anno, std::string _var_name, unsigned _var_id, EdgeArrowType _direction, unsigned long long _left, unsigned long long _right);
@@ -91,9 +92,12 @@ public:
 // Support both SPARQL Triple Pattern && Cypher Path Pattern
 class RigidPattern{
 public:
-    // only named path var has var_name
+    enum RigidPatternType {PATH, SHORTEST_PATH, ALL_SHORTEST_PATHS };
+    RigidPatternType type_;
+
+    // only named var has var_name
     std::string var_name_;
-    // only named path var has var_id
+    // only named var has var_id
     unsigned var_id_;
 
     bool is_anno_var_;
