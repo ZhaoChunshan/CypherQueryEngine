@@ -43,7 +43,7 @@ void GPStore::NodePattern::print() const{
         return;
     }
     
-    std::printf("(%s", var_name_.c_str());
+    std::printf("(%s (id:%u) ", var_name_.c_str(), var_id_);
     for(const auto& l : labels_){
         std::printf(" :%s",l.c_str());
     }
@@ -51,7 +51,7 @@ void GPStore::NodePattern::print() const{
         std::printf(")  Properties:\n");
 
         for(const auto& p : properties_){
-            std::printf("%s:\n", p.first);
+            std::printf("%s:\n", p.first.c_str());
             p.second.print(0);
         }
     } else if(param_str_.size() != 0){
@@ -119,7 +119,7 @@ void GPStore::EdgePattern::print() const{
         std::printf("<-[");
     }
 
-    std::printf("%s", var_name_.c_str());
+    std::printf("%s(id:%u)", var_name_.c_str(), var_id_);
     for(const auto& t : edge_types_){
         std::printf(" :%s",t.c_str());
     }
