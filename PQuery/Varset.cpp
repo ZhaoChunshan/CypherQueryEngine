@@ -144,4 +144,3 @@ void Varset::print() const
 
 	printf("\n");
 }
-
