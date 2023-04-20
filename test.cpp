@@ -114,7 +114,7 @@ int test6(){
 /* 测试七: 抽象语法树 */
 int test7(){
     PCypherParser parser;
-    std::ifstream fin(QueryPath + "/interactive-complex-10.cypher");
+    std::ifstream fin(QueryPath + "interactive-complex-5.cypher");
     CypherAST *ast = nullptr;
     try{
         ast = parser.CypherParse(fin);

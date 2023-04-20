@@ -50,8 +50,11 @@ public:
 	unsigned id_;                                   // rdf,pg
 	VarType var_type_;                              // rdf,pg
 	std::string var_name_;                          // rdf,pg, maybe empty for pg anno var
+
     EdgeDirectType edge_direct_;                    // pg
     int range_left_, range_right_;                  // pg rangeLeft=rangeRight=1: it's regular edge; rangeRight=-1 means +INF
+    bool is_edge_;                                  // is Cypher edge or SPARQL predicate
+
     std::vector<unsigned> labels_or_types_;              // pg conjunction of labels or disjunction of types
     std::map<unsigned, Value> properties_;
 

@@ -17,12 +17,12 @@ set(SOURCES
 	PParser/Cypher/CypherListener.cpp
 	PParser/Cypher/CypherParser.cpp
 	PParser/Cypher/CypherVisitor.cpp
+    Value/Expression.cpp
     PParser/Pattern.cpp
     PParser/CypherAST.cpp
     PParser/PCypherParser.cpp
     Value/Value.cpp
-    Value/Expression.cpp
-    PQuery/Varset.cpp
+    
 	
 	test.cpp
 )
