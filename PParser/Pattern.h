@@ -4,10 +4,16 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "../Value/Expression.h"
-
-
+/* make it able to be compiled */
 namespace GPStore{
+class NodePattern;
+class EdgePattern;
+class RigidPattern;
+}
+#include "../PQuery/PVarset.h"
+#include "../Value/Expression.h"
+namespace GPStore{
+
 
 // Support both SPARQL && Cypher NodeVar
 class NodePattern{
@@ -50,7 +56,7 @@ class EdgePattern{
 public:
     // Only SPARQL has constant
     enum EdgePatternType { EDGE_VAR, EDGE_CONST };
-    enum EdgeArrowType { LEFT_ARROW, RIGHT_ARROW, LEFT_RIGHT_ARROW, UNDIRECTED };
+    enum EdgeArrowType { LEFT_ARROW, RIGHT_ARROW, UNDIRECTED };
 
     EdgePatternType type_;
     EdgeArrowType arrow_direction_;
@@ -73,7 +79,7 @@ public:
     std::vector<std::string> edge_types_;
 
     // for update clauses, may be parameters, e.g. CREATE (a $1)
-    std::map<std::string, GPStore::Expression> properties_;
+    std::map<std::string, Expression> properties_;
     std::string param_str_;
     EdgePattern();
     EdgePattern(bool is_anno, std::string _var_name, unsigned _var_id, EdgeArrowType _direction);
@@ -106,9 +112,9 @@ public:
     std::vector<EdgePattern> edges_;
 
     // Named node vars and named edge vars
-    Varset covered_vars_;
-    Varset covered_node_vars_;
-    Varset covered_edge_vars_;
+    PVarset<unsigned> covered_var_id_;
+    PVarset<unsigned> covered_node_var_id_;
+    PVarset<unsigned> covered_edge_var_id_;
     RigidPattern();
     RigidPattern(const RigidPattern& that);
     RigidPattern& operator=(const RigidPattern& that);

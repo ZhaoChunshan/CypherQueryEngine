@@ -1,2 +1,2 @@
 # PParser
-解析Cypher、SPARQL查询，生成相应的执行树。执行树的节点是PQueryOperator
+解析Cypher查询，生成抽象语法树CypherAST。抽象语法树的节点是各种各样的Clause。

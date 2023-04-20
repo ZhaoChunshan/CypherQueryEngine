@@ -30,6 +30,7 @@ GPStore::NodePattern::operator=(const NodePattern& that){
     var_id_ = that.var_id_;
     labels_ = that.labels_;
     properties_ = that.properties_;
+    param_str_ = that.param_str_;
     return *this;
 }
 
@@ -85,7 +86,7 @@ constant_str_(constant_str), is_edge_length_v_(false), range_left_(1), range_rig
 GPStore::EdgePattern::EdgePattern(const EdgePattern& that):type_(that.type_), arrow_direction_(that.arrow_direction_), \
 is_anno_var_(that.is_anno_var_), var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), \
 is_edge_length_v_(that.is_edge_length_v_), range_left_(that.range_left_), range_right_(that.range_right_), \
-edge_types_(that.edge_types_), properties_(that.properties_){
+edge_types_(that.edge_types_), properties_(that.properties_), param_str_(that.param_str_){
 
 }
 
@@ -101,6 +102,7 @@ GPStore::EdgePattern& GPStore::EdgePattern::operator=(const EdgePattern& that){
     range_right_ = that.range_right_;
     edge_types_ = that.edge_types_;
     properties_ = that.properties_;
+    param_str_ = that.param_str_;
     return *this;
 }
 
@@ -147,7 +149,7 @@ GPStore::RigidPattern::RigidPattern(){
 
 GPStore::RigidPattern::RigidPattern(const RigidPattern& that):type_(that.type_),
 var_name_(that.var_name_), var_id_(that.var_id_), is_anno_var_(that.is_anno_var_),
-nodes_(that.nodes_), edges_(that.edges_), covered_node_vars_(that.covered_node_vars_), covered_edge_vars_(that.covered_edge_vars_), covered_vars_(that.covered_vars_){
+nodes_(that.nodes_), edges_(that.edges_), covered_var_id_(that.covered_var_id_), covered_node_var_id_(that.covered_node_var_id_), covered_edge_var_id_(that.covered_edge_var_id_){
 
 }
 
@@ -158,9 +160,9 @@ GPStore::RigidPattern& GPStore::RigidPattern::operator=(const RigidPattern& that
     is_anno_var_ = that.is_anno_var_;
     nodes_ = that.nodes_;
     edges_ = that.edges_;
-    covered_node_vars_ = that.covered_node_vars_;
-    covered_edge_vars_ = that.covered_edge_vars_;
-    covered_vars_ = that.covered_vars_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_node_var_id_ = that.covered_node_var_id_;
+    covered_edge_var_id_ = that.covered_edge_var_id_;
     return *this;
 }
 

@@ -42,6 +42,7 @@ class CypherAST{
 public:
 	std::vector<std::unique_ptr<SingleQueryAST>> single_querys_;
 	std::vector<bool> union_all_;
+    std::vector<std::string> id2var_name_;
     CypherAST() = default;
     ~CypherAST() = default;
     void print(int dep) const;
@@ -103,6 +104,7 @@ class UnwindAST: public ReadingAST{
 public:
 	std::unique_ptr<GPStore::Expression> exp_;
 	std::string var_name_;
+    unsigned var_id_;
     UnwindAST(){ reading_form_ = UNWIND; };
     ~UnwindAST() = default;
     void print(int dep) const override;
@@ -119,6 +121,9 @@ public:
 	std::vector<std::string> yield_items;
     // 与yield_items一一对应，为空则无别名
 	std::vector<std::string> alias; 
+
+    std::vector<std::string> yield_var_;   // 原名或别名
+    std::vector<unsigned> yield_var_id_;    // 原名或别名的id
 	std::unique_ptr<GPStore::Expression> where_;
     
     InQueryCallAST(){reading_form_ = INQUERY_CALL;}
@@ -181,11 +186,17 @@ public:
 	bool with_;	// true: with false: return
 	bool distinct_;
 	bool asterisk_;
+    bool aggregation_;  // does projection contain aggr function ?
 	std::vector<std::unique_ptr<GPStore::Expression>> proj_exp_;
     std::vector<std::string> proj_exp_text_;    // 存放表达式文本，匿名的RETURN的表达式，以此为列名
 	std::vector<std::string> alias_;            // 重命名，为""则无名
     std::vector<std::string> column_name_;      // 最终名字
-	std::unique_ptr<GPStore::Expression> skip_;
+    std::vector<unsigned> column_var_id_;       // id化的column_name
+    // 如果是星星*，则涵盖了符号表中已有，而column_var_id_未投影的；如果不是星星，则是指
+    // Orderby中用到的，而column_var_id_没投影的。
+    std::vector<unsigned> implict_proj_var_id_; 
+
+	std::unique_ptr<GPStore::Expression> skip_; 
 	std::unique_ptr<GPStore::Expression> limit_;
 	std::vector<std::unique_ptr<GPStore::Expression>> order_by_;	// 排序的变量名
 	std::vector<bool> ascending_;	// 是否升序

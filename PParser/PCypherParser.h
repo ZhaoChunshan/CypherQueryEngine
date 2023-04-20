@@ -7,6 +7,41 @@
 #include "Pattern.h"
 #include <unordered_map>
 #include <unordered_set>
+
+
+class CypherSymbol{
+public:
+    enum VarType {NODE_VAR, EDGE_VAR, PATH_VAR, VALUE_VAR};
+    VarType var_ty_;
+    unsigned var_id_;
+    CypherSymbol(){}
+    CypherSymbol(VarType vty):var_ty_(vty){}
+    CypherSymbol(unsigned var_id):var_id_(var_id){}
+    CypherSymbol(VarType vty, unsigned var_id):var_ty_(vty), var_id_(var_id){}
+};
+
+class SymbolTableStack{
+private:
+    std::vector<std::string> id2string_;
+    std::vector<std::unordered_map<std::string, CypherSymbol>> symbol_tb_st_;
+    unsigned next_var_id_, next_anno_id_;
+public:
+    bool exists(const std::string & var) const;
+    CypherSymbol& search(const std::string & var) ;
+    void insert(const std::string& var_name, const CypherSymbol& sym);
+    void insert(const std::string& var_name, CypherSymbol::VarType var_ty, unsigned var_id);
+    void clearExcept(const std::vector<std::string> & remain_var);
+    void clear();
+    void push();
+    void pop();
+    void reset();
+    unsigned getNextVarId();
+    std::string getAnnoName();
+    void putString(const std::string& str) { id2string_.emplace_back(str); }
+    std::vector<unsigned> getAllVarId();
+    const std::vector<std::string>& getIdToString(){return id2string_;}
+};
+
 /**
 	Parser for Cypher queries, inherited from CypherBaseVisitor, which is
 	automatically generated from the Cypher grammar by ANTLR. Implements
@@ -15,39 +50,18 @@
 */
 class PCypherParser: public CypherBaseVisitor
 {
-public:
-
-    /* VarInfo: 类型检查/命名冲突等 */
-    struct VarInfo{
-        enum VarType {NODE_VAR, EDGE_VAR, PATH_VAR, VALUE_VAR};
-        VarType var_ty_;
-        unsigned var_id_;
-        VarInfo(){}
-        VarInfo(VarType vty, unsigned var_id):var_ty_(vty), var_id_(var_id){}
-    };
-    /* 每个变量名到变量信息的映射，类似于符号表 */
-    std::unordered_map<std::string, VarInfo> var_info_;
 private:
-    
-    /* with、return 块 无编码，其余可编码 */
-    unsigned nextVarId, nextAnnoId;
-    
-
+    SymbolTableStack sym_tb_;
 public:
 	PCypherParser(){}
 
 	CypherAST* CypherParse(const std::string &query);	// Overall driver function
     CypherAST* CypherParse(std::istream& in);
-private:
 
-    /**
-     * @brief 分配一个变量的id
-    */
-    unsigned getNextVarId();
-    std::pair<unsigned, std::string> getAnnoIdAndName();
-    bool existsVar(const std::string& var_name);
-    VarInfo& searchVar(const std::string &var_name);
-    void insertVar(const std::string& var_name, unsigned var_id, VarInfo::VarType ty);
+    const std::vector<std::string>& getIdToString(){
+        return sym_tb_.getIdToString();
+    }
+private:
 
     /* helper functions */
     static long parseIntegerLiteral(const std::string &s);
@@ -127,4 +141,3 @@ public:
 	void syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, \
 		size_t line, size_t charPositionInLine, const std::string &msg, std::exception_ptr e);
 };
-
