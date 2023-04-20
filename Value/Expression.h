@@ -5,7 +5,13 @@
 #include <vector>
 #include <map>
 #include <set>
-#include "../PQuery/Varset.h"
+#include <memory>
+/* make it able to be compiled */
+namespace GPStore{
+    class Expression;
+}
+#include "../PQuery/PVarset.h"
+#include "../PParser/Pattern.h"
 
 namespace GPStore{
     
@@ -46,13 +52,9 @@ public:
     AtomPropertyLabels* property_label_;
 
     // 变量覆盖集合
-    Varset covered_vars_;
-    // 解析完，执行中，给当前的WithBlock中的变量分配的ID。运行中变量的id，并不是sid oid eid这种。
-    std::vector<unsigned> covered_vars_id_; 
-    // 属性覆盖集合 a.age
-    std::set<std::pair<std::string, std::string>> covered_props_;
-    // pair< varid(a) . propid(age)> (未实现，因为需要调用PStore.)
-    std::set<std::pair<unsigned, unsigned>> covered_props_id_;
+    PVarset<unsigned> covered_var_id_;
+    // 属性覆盖集合 a.age 暂未实现，因为要调用PStore
+    PVarset<std::pair<unsigned, unsigned>> covered_props_;
 
     Expression();
     Expression(const Expression& that);
@@ -62,12 +64,10 @@ public:
     
     bool isAtom() const;
     bool isVariable() const;
+    bool containsAggrFunc() const;
     /* if this is variable, return its name */
     std::string getVariableName() const;
     
-    /* 将表达式树中所有的变量赋予变量的id，同时获得covered_vars_id_ */
-    void encode(const std::map<std::string, unsigned>& var2id);
-
     void print(int dep) const;
 
     
@@ -82,6 +82,7 @@ class AtomPropertyLabels{
 public:
     std::vector<std::string> key_names_;
     std::vector<std::string> node_labels_;
+    unsigned prop_id_;  //keynames[0]
     AtomPropertyLabels();
     AtomPropertyLabels(const AtomPropertyLabels &that);
     AtomPropertyLabels& operator=(const AtomPropertyLabels &that);
@@ -95,15 +96,13 @@ public:
 	enum AtomType{LITERAL, PARAMETER, CASE_EXPRESSION, COUNT, LIST_COMPREHENSION, PATTERN_COMPREHENSION,
 	QUANTIFIER, PATTERN_PREDICATE, FUNCTION_INVOCATION, EXISTENTIAL_SUBQUERY, VARIABLE,PARENTHESIZED_EXPRESSION};
 	AtomType atom_type_;
-    Varset covered_vars_;
-    std::vector<unsigned> covered_vars_id_;
-    // 属性覆盖集合 a.age
-    std::set<std::pair<std::string, std::string>> covered_props_;
-    std::set<std::pair<unsigned, unsigned>> covered_props_id_;
+    // 变量覆盖集合
+    PVarset<unsigned> covered_var_id_;
+    // 属性覆盖集合 a.age 暂未实现，因为要调用PStore
+    PVarset<std::pair<unsigned, unsigned>> covered_props_;
 
     Atom() = default;
     virtual ~Atom() = default;
-    virtual void encode(const std::map<std::string, unsigned>& var2id) = 0;
     virtual void print(int dep)const = 0;
 };
 
@@ -122,7 +121,6 @@ public:
     Literal(const Literal& that);
 
     ~Literal();
-    void encode(const std::map<std::string, unsigned>& var2id) override;
     void print(int dep)const override;
 };
 
@@ -137,7 +135,6 @@ public:
     Parameter(const Parameter& that);
 
     ~Parameter();
-    void encode(const std::map<std::string, unsigned>& var2id) override;
     void print(int dep) const override;
 };
 
@@ -155,19 +152,17 @@ public:
     CaseExpression(const CaseExpression &that);
     ~CaseExpression();
 
-    
-    void encode(const std::map<std::string, unsigned>& var2id) override;
     void print(int dep) const override;
 };
 
-/* only for aggregate func count(*) strange? */
+/* only for aggregate func count(*) */
 class Count : public Atom{
 public:
     
     Count();
     Count(const Count& that);
     ~Count();
-    void encode(const std::map<std::string, unsigned>& var2id) override;
+
     void print(int dep) const override;
 };
 
@@ -176,6 +171,7 @@ class ListComprehension: public Atom{
 public:
     /* [var in expression where filter | trans]*/
 	std::string var_name_;  // necessary
+    unsigned var_id_;       // id of var name
     Expression *exp_;     // necessary
     Expression *filter_;         // optional
 	Expression *trans_;          // optional
@@ -184,7 +180,7 @@ public:
     ListComprehension(const ListComprehension& that);
     ~ListComprehension();
 
-    void encode(const std::map<std::string, unsigned>& var2id) override;
+
     void print(int dep) const override;
 };
 
@@ -192,14 +188,14 @@ public:
 class PatternComprehension: public Atom{
 public:
 	std::string var_name_;	// optional
-	void* pattern_part_;         // necessary
+    unsigned var_id_;
+	std::unique_ptr<RigidPattern> pattern_;
 	Expression *filter_;         // optional
 	Expression *trans_;          // trans
     PatternComprehension();
     PatternComprehension(const PatternComprehension& that);
     ~PatternComprehension();
 
-    void encode(const std::map<std::string, unsigned>& var2id) override;
     void print(int dep) const override;
 };
 
@@ -210,6 +206,7 @@ public:
 	enum QuantifierType {ALL, ANY, SINGLE, NONE};
 	QuantifierType quantifier_type_;
 	std::string var_name_;
+    unsigned var_id_;
     Expression *container_;
     Expression *exp_;
 
@@ -218,22 +215,20 @@ public:
     Quantifier(const Quantifier& that);
     ~Quantifier();
 
-    void encode(const std::map<std::string, unsigned>& var2id) override;
     void print(int dep) const override;
 };
 
 // TODO: We dont support PatternPredicate in this version.
 class PatternPredicate: public Atom{
 public:
-	void *pattern_part;
+	std::unique_ptr<RigidPattern> pattern_;
     PatternPredicate();
     PatternPredicate(const PatternPredicate& that);
     ~PatternPredicate();
-    void encode(const std::map<std::string, unsigned>& var2id) override;
+
     void print(int dep) const override;
 };
 
-// TODO: We dont support FunctionInvocation in this version.
 class FunctionInvocation : public Atom{
 public:
 	std::vector<std::string> func_name_;
@@ -243,8 +238,7 @@ public:
     FunctionInvocation();
     FunctionInvocation(const FunctionInvocation& that);
     ~FunctionInvocation();
-
-    void encode(const std::map<std::string, unsigned>& var2id) override;
+    bool isAggregationFunction();
     void print(int dep) const override;
 };
 
@@ -259,7 +253,6 @@ public:
     ExistentialSubquery(const ExistentialSubquery& that);
     ~ExistentialSubquery();
 
-    void encode(const std::map<std::string, unsigned>& var2id) override;
     void print(int dep) const override;
 };
 
@@ -273,7 +266,6 @@ public:
     Variable(const Variable& that);
     ~Variable();
 
-    void encode(const std::map<std::string, unsigned>& var2id) override;
     void print(int dep) const override;
 };
 
@@ -284,7 +276,6 @@ public:
     ParenthesizedExpression(const ParenthesizedExpression& that);
     ~ParenthesizedExpression();
 
-    void encode(const std::map<std::string, unsigned>& var2id) override;
     void print(int dep) const override;
 };
 

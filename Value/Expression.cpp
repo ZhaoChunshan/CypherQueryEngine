@@ -1,6 +1,6 @@
 #include "Expression.h"
 #include <stdexcept>
-
+#include <algorithm>
 /**
  * helper functions
 */
@@ -103,8 +103,8 @@ GPStore::Expression::Expression(const Expression& that):atom_(nullptr), property
         }
     }
     oprt_ = that.oprt_;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
 }
 
 GPStore::Expression& GPStore::Expression::operator=(const Expression& that){
@@ -121,8 +121,8 @@ GPStore::Expression& GPStore::Expression::operator=(const Expression& that){
         }
     }
     oprt_ = that.oprt_;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
     return *this;
 }
 
@@ -147,8 +147,8 @@ void GPStore::Expression::release(){
     oprt_ = EMPTY_OP;
     atom_ = nullptr;
     property_label_ = nullptr;
-    std::vector<std::string>().swap(covered_vars_.vars);
-    std::vector<unsigned>().swap(covered_vars_id_);
+    std::vector<unsigned>().swap(covered_var_id_.vars);
+    std::vector<std::pair<unsigned, unsigned>>().swap(covered_props_.vars);
 }
 
 bool GPStore::Expression::isAtom() const{
@@ -159,23 +159,62 @@ bool GPStore::Expression::isVariable() const{
     return oprt_ == EMPTY_OP && atom_ != nullptr && atom_->atom_type_ == Atom::VARIABLE;
 }
 
+bool GPStore::Expression::containsAggrFunc() const{
+    std::cout <<  "IN Expression::containsAggrFunc()" << std::endl;
+    if(oprt_ == EMPTY_OP){
+        for(auto child : children_){
+            if(child->containsAggrFunc())
+                return true;
+        }
+    } else {
+        auto atom_ty = atom_->atom_type_;
+        if(atom_ty == Atom::LITERAL){
+                auto lit = dynamic_cast<Literal*>(atom_);
+                if(lit->literal_type == Literal::LIST_LITERAL){
+                    for(auto e : lit->list_literal){
+                        if(e->containsAggrFunc()) return true;
+                    }
+                }else if(lit->literal_type == Literal::MAP_LITERAL){
+                    for(auto p : lit->map_literal){
+                        if(p.second->containsAggrFunc()) return true;
+                    }
+                }
+        } else if(atom_ty == Atom::PARAMETER){
+            
+        } else if(atom_ty == Atom::CASE_EXPRESSION){
+                auto case_exp = dynamic_cast<CaseExpression*>(atom_);
+                if(case_exp->case_type == CaseExpression::SIMPLE && \
+                case_exp->test_expr->containsAggrFunc()) return true;
+        } else if(atom_ty == Atom::COUNT){
+                return true;
+        } else if(atom_ty ==Atom::LIST_COMPREHENSION){
+
+        } else if(atom_ty == Atom::PATTERN_COMPREHENSION){
+
+        } else if(atom_ty ==Atom::QUANTIFIER){
+
+        } else if(atom_ty == Atom::PATTERN_PREDICATE){
+
+        } else if(atom_ty == Atom::FUNCTION_INVOCATION){
+            auto func = dynamic_cast<FunctionInvocation*>(atom_);
+            if(func->isAggregationFunction()) return true;
+            for(auto arg: func->args)
+                if(arg->containsAggrFunc()) return true;
+        } else if(atom_ty ==  Atom::EXISTENTIAL_SUBQUERY){
+
+        } else if(atom_ty ==  Atom::VARIABLE){
+
+        }
+    }
+    std::cout <<  "OUT OF Expression::containsAggrFunc()" << std::endl;
+
+    return false;
+}
+
 std::string GPStore::Expression::getVariableName() const{
     return dynamic_cast<GPStore::Variable *>(atom_)->var_;
 }
 
-void GPStore::Expression::encode(const std::map<std::string, unsigned>& var2id){
-    if(isAtom()){
-        atom_->encode(var2id);
-    } else{
-        for(auto exp : children_){
-            exp->encode(var2id);
-        }
-    }
-    covered_vars_id_.clear();
-    for(const auto& var_name : covered_vars_.vars){
-        covered_vars_id_.push_back(var2id.at(var_name));
-    }
-}
 
 void GPStore::Expression::print(int dep) const{
     printHead(dep, "Expression");
@@ -249,8 +288,8 @@ GPStore::Literal::Literal(LiteralType lt){
 
 GPStore::Literal::Literal(const Literal& that){
     atom_type_ = that.atom_type_;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
     literal_type = that.literal_type;
     switch (that.literal_type)
     {
@@ -290,23 +329,6 @@ GPStore::Literal::~Literal(){
     for(auto &p : map_literal)
         if(p.second != nullptr)
             delete p.second;
-}
-
-void GPStore::Literal::encode(const std::map<std::string, unsigned>& var2id){
-    covered_vars_id_.clear();
-    for(const std::string& s : covered_vars_.vars){
-        covered_vars_id_.push_back(var2id.at(s));
-    }
-    if(literal_type == LIST_LITERAL){
-        for(Expression *e : list_literal){
-            e->encode(var2id);
-        }
-    }else if(literal_type == MAP_LITERAL){
-        for(const auto&p : map_literal){
-            p.second->encode(var2id);
-        }
-    } 
-    return;
 }
 
 void GPStore::Literal::print(int dep) const{
@@ -373,10 +395,6 @@ GPStore::Parameter::Parameter(const Parameter& that){
 
 GPStore::Parameter::~Parameter(){ }
 
-void GPStore::Parameter::encode(const std::map<std::string, unsigned>& var2id) {
-    // A parameter doesnot cover any variable, just return
-    return;    
-}
 
 void GPStore::Parameter::print(int dep) const{
     std::string s = "Paramter: " + (symbolic_name.length () != 0 ? symbolic_name : "$" + std::to_string(parameter_num));
@@ -395,8 +413,8 @@ GPStore::CaseExpression::CaseExpression(CaseType ct): case_type(ct), test_expr(n
 
 GPStore::CaseExpression::CaseExpression(const CaseExpression &that):test_expr(nullptr), else_expr(nullptr){
     atom_type_ = that.atom_type_;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
     case_type = that.case_type;
     if(that.case_type == SIMPLE){
         test_expr = new Expression(*that.test_expr);
@@ -426,23 +444,6 @@ GPStore::CaseExpression::CaseExpression::~CaseExpression(){
 }
 
 
-void GPStore::CaseExpression::encode(const std::map<std::string, unsigned>& var2id){
-    for(const std::string &s : covered_vars_.vars){
-        covered_vars_id_.push_back(var2id.at(s));
-    }
-    if(test_expr != nullptr)
-        test_expr->encode(var2id);
-    for(Expression *w : when_exprs){
-        w->encode(var2id);
-    }
-    for(Expression *t : then_exprs){
-        t->encode(var2id);
-    }
-    if(else_expr != nullptr){
-        else_expr->encode(var2id);
-    }
-    return;
-}
 
 void GPStore::CaseExpression::print(int dep) const {
     Expression::printHead(dep, "Case");
@@ -476,12 +477,6 @@ GPStore::Count::~Count(){
 
 }
 
-// I do not think Count(*) cover any var.
-void GPStore::Count::encode(const std::map<std::string, unsigned>& var2id){
-    for(const std::string& s : covered_vars_.vars){
-        covered_vars_id_.push_back(var2id.at(s));
-    }
-}
 
 void GPStore::Count::print(int dep) const{
     Expression::printHead(dep, "COUNT (*)", false);
@@ -493,8 +488,8 @@ GPStore::ListComprehension::ListComprehension():exp_(nullptr), filter_(nullptr),
 
 GPStore::ListComprehension::ListComprehension(const ListComprehension& that):exp_(nullptr), filter_(nullptr), trans_(nullptr){
     atom_type_ = LIST_COMPREHENSION;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
     var_name_ = that.var_name_;
     exp_ = new Expression(*that.exp_);
     if(that.filter_ != nullptr)
@@ -512,18 +507,7 @@ GPStore::ListComprehension::ListComprehension::~ListComprehension(){
         delete trans_;
 }
 
-void GPStore::ListComprehension::ListComprehension::encode(const std::map<std::string, unsigned>& var2id){
-    for(const std::string& s : covered_vars_.vars){
-        covered_vars_id_.push_back(var2id.at(s));
-    }
-    exp_->encode(var2id);
-    if(filter_ != nullptr){
-        filter_->encode(var2id);
-    }
-    if(trans_ != nullptr){
-        trans_->encode(var2id);
-    }
-}
+
 
 void GPStore::ListComprehension::print(int dep) const{
     Expression::printHead(dep, "ListComprehension");
@@ -543,7 +527,7 @@ void GPStore::ListComprehension::print(int dep) const{
     return;
 }
 
-GPStore::PatternComprehension::PatternComprehension(): pattern_part_(nullptr), filter_(nullptr), trans_(nullptr){
+GPStore::PatternComprehension::PatternComprehension(): filter_(nullptr), trans_(nullptr){
     atom_type_ = PATTERN_COMPREHENSION;
     throw std::runtime_error("[ERROR] Not implemented.");
 }
@@ -551,8 +535,8 @@ GPStore::PatternComprehension::PatternComprehension(): pattern_part_(nullptr), f
 GPStore::PatternComprehension::PatternComprehension(const PatternComprehension& that){
     throw std::runtime_error("[ERROR] Not implemented.");
     atom_type_ = that.atom_type_;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
     var_name_ = that.var_name_;
     //TODO pattern_part_ = that.pattern_part_; 
     filter_ = new Expression(*that.filter_);
@@ -561,13 +545,9 @@ GPStore::PatternComprehension::PatternComprehension(const PatternComprehension& 
 }
 
 GPStore::PatternComprehension::~PatternComprehension(){
-    throw std::runtime_error("[ERROR] Not implemented.");
+    // throw std::runtime_error("[ERROR] Not implemented.");
 }
 
-
-void GPStore::PatternComprehension::encode(const std::map<std::string, unsigned>& var2id) {
-    throw std::runtime_error("[ERROR] Not implemented.");
-};
 
 void GPStore::PatternComprehension::print(int dep)  const {
     throw std::runtime_error("[ERROR] Not implemented.");
@@ -584,8 +564,8 @@ GPStore::Quantifier::Quantifier(QuantifierType qt):container_(nullptr), exp_(nul
 
 GPStore::Quantifier::Quantifier(const Quantifier& that):container_(nullptr), exp_(nullptr) {
     atom_type_ = that.atom_type_;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
     var_name_ = that.var_name_;
     quantifier_type_ = that.quantifier_type_;
     if(that.container_ != nullptr){
@@ -605,15 +585,6 @@ GPStore::Quantifier::~Quantifier(){
     }
 }
 
-void GPStore::Quantifier::encode(const std::map<std::string, unsigned>& var2id) {
-    for(const std::string& s : covered_vars_.vars){
-        covered_vars_id_.push_back(var2id.at(s));
-    }
-    container_->encode(var2id);
-    if(exp_ != nullptr){
-        exp_->encode(var2id);
-    }
-}
 
 void GPStore::Quantifier::print(int dep) const{
     const char *s[4]={
@@ -643,9 +614,6 @@ GPStore::PatternPredicate::~PatternPredicate(){
     throw std::runtime_error("[ERROR] Not implemented.");
 }
 
-void GPStore::PatternPredicate::encode(const std::map<std::string, unsigned>& var2id) {
-    throw std::runtime_error("[ERROR] Not implemented.");
-}
 
 void GPStore::PatternPredicate::print(int dep) const {
     throw std::runtime_error("[ERROR] Not implemented.");
@@ -658,8 +626,8 @@ GPStore::FunctionInvocation::FunctionInvocation():distinct(false){
 
 GPStore::FunctionInvocation::FunctionInvocation(const FunctionInvocation& that){
     atom_type_ = that.atom_type_;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
     func_name_ = that.func_name_;
     distinct = that.distinct;
     for(auto e : that.args){
@@ -673,13 +641,14 @@ GPStore::FunctionInvocation::~FunctionInvocation(){
             delete e;
 }
 
-void GPStore::FunctionInvocation::encode(const std::map<std::string, unsigned>& var2id) {
-    for(const std::string& s : covered_vars_.vars){
-        covered_vars_id_.push_back(var2id.at(s));
-    }
-    for(auto arg : args){
-        arg->encode(var2id);
-    }
+bool GPStore::FunctionInvocation::isAggregationFunction(){
+    if(func_name_.size() != 1) return false;
+
+    std::string str = func_name_[0];
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    std::vector<std::string> aggr_func{"avg", "collect", "count", "max", "min", "percentilecont", "percentiledisc", "stdev", "stdevp", "sum"};
+    
+    return (std::find(aggr_func.begin(), aggr_func.end(), str) != aggr_func.end());
 }
 
 void GPStore::FunctionInvocation::print(int dep) const {
@@ -712,10 +681,6 @@ GPStore::ExistentialSubquery:: ~ExistentialSubquery(){
     throw std::runtime_error("[ERROR] Not implemented.");
 }
 
-void GPStore::ExistentialSubquery::encode(const std::map<std::string, unsigned>& var2id) {
-    throw std::runtime_error("[ERROR] Not implemented.");
-}
-
 void GPStore::ExistentialSubquery::print(int dep)const{
     throw std::runtime_error("[ERROR] Not implemented.");
 }
@@ -735,25 +700,14 @@ GPStore::Variable::Variable(const std::string &s){
 
 GPStore::Variable::Variable(const Variable& that){
     atom_type_ = that.atom_type_;
-    covered_vars_ = that.covered_vars_;
-    covered_vars_id_ = that.covered_vars_id_;
+    covered_var_id_ = that.covered_var_id_;
+    covered_props_ = that.covered_props_;
     var_ = that.var_;
     id_ = that.id_;
 }
 
 GPStore::Variable::~Variable(){
 
-}
-
-void GPStore::Variable::encode(const std::map<std::string, unsigned>& var2id){
-    auto it = var2id.find(var_);
-    if(it == var2id.end()){
-        id_ = ID_NONE;
-    }else{
-        id_ = it->second;
-    }
-    covered_vars_id_.clear();
-    covered_vars_id_.push_back(id_);
 }
 
 void GPStore::Variable::print(int dep) const {
@@ -775,13 +729,6 @@ GPStore::ParenthesizedExpression::ParenthesizedExpression(const ParenthesizedExp
 GPStore::ParenthesizedExpression::~ParenthesizedExpression(){
     if(exp_ != nullptr)
         delete exp_;
-}
-
-void GPStore::ParenthesizedExpression::encode(const std::map<std::string, unsigned>& var2id){
-    for(const auto& s : covered_vars_.vars){
-        covered_vars_id_.push_back(var2id.at(s));
-    }
-    exp_->encode(var2id);
 }
 
 void GPStore::ParenthesizedExpression::print(int dep) const {
