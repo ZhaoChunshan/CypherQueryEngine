@@ -95,7 +95,9 @@ public:
 
     Value& operator=(const Value&other);
 
-    
+    /* get a read-only pointer the the content of a list value */
+    const std::vector<GPStore::Value*>* getListContent();
+
     /* append an element to a list */
     void append(const Value& value);
 

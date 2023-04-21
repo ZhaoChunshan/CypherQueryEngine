@@ -269,6 +269,11 @@ GPStore::Value& GPStore::Value::operator=(const Value&other){
     return *this;
 }
 
+const std::vector<GPStore::Value*>* GPStore::Value::getListContent(){
+    if(type_ != LIST) return nullptr;
+    return this->data_.List;
+}
+
 void GPStore::Value::append(const GPStore::Value& value){
     data_.List->push_back(ValueDeepCopy(&value));
     return;
