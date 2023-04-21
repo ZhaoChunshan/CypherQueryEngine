@@ -75,6 +75,10 @@ public:
     static void printHead(int dep, const char *name, bool colon = true, bool endline = true);
     static Atom * AtomDeepCopy(Atom *atom);
     static std::string oprt2String(OperatorType op);
+    /**
+     * @brief split exp by operator oprt. SPLIT(e1 AND e2 AND e3) = [e1, e2, e3]
+    */
+    static std::vector<Expression*> split(Expression *exp, OperatorType oprt);
 };
 
 // 属性标签表达式，用于 p.props.age; a:Person 这类表达式

@@ -445,7 +445,7 @@ antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionB
     }   // for(auto proj_ctx...
 
     if(with_return->asterisk_){
-        with_return->implict_proj_var_id_ = ( PVarset<unsigned>(sym_tb_.getAllVarId())-PVarset<unsigned>(with_return->column_var_id_) ).vars;
+        with_return->implict_proj_var_id_ = ( PVarset<unsigned>(sym_tb_.getAllNamedVarId())-PVarset<unsigned>(with_return->column_var_id_) ).vars;
     }
 
     PVarset<unsigned> order_var;
@@ -1536,6 +1536,17 @@ std::vector<unsigned> SymbolTableStack::getAllVarId(){
     for(const auto &ma : symbol_tb_st_){
         for(const auto &p : ma){
             var_ids.addVar(p.second.var_id_);
+        }
+    }
+    return var_ids.vars;
+}
+
+std::vector<unsigned> SymbolTableStack::getAllNamedVarId(){
+    PVarset<unsigned> var_ids;
+    for(const auto &ma : symbol_tb_st_){
+        for(const auto &p : ma){
+            if(p.first.at(0) != '@')
+                var_ids.addVar(p.second.var_id_);
         }
     }
     return var_ids.vars;

@@ -39,6 +39,7 @@ public:
     std::string getAnnoName();
     void putString(const std::string& str) { id2string_.emplace_back(str); }
     std::vector<unsigned> getAllVarId();
+    std::vector<unsigned> getAllNamedVarId();
     const std::vector<std::string>& getIdToString(){return id2string_;}
 };
 

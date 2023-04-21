@@ -84,6 +84,27 @@ std::string GPStore::Expression::oprt2String(OperatorType op){
     return "EMPTY OP";
 }
 
+std::vector<GPStore::Expression*> 
+GPStore::Expression::split(GPStore::Expression *exp, OperatorType oprt){
+    std::vector<GPStore::Expression *> split_exps;
+    if(exp->oprt_ != oprt) {
+        split_exps.push_back(exp);
+    } else {
+        for(auto child : exp->children_){
+            if(child->oprt_ != oprt){
+                split_exps.push_back(child);
+            } else {
+                auto split_ = GPStore::Expression::split(child, oprt);
+                for(auto sp : split_)
+                    split_exps.push_back(sp);
+            }
+            child = nullptr;
+        }
+        delete exp;
+    }
+    return split_exps;
+}
+
 /* class: Expression */
 
 
