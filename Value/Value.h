@@ -69,10 +69,10 @@ public:
     Value(const std::vector<uint_64>& node_id, const std::vector<uint_64> &edge_id, const std::vector<EdgeType>& edge_type);
 
     /* Construct List */
-    Value(const std::vector<Value *> &list_);
+    Value(const std::vector<Value *> &list_, bool deep_copy = true);
 
     /* Construct Map */
-    Value(const std::vector<std::string> &keys, const std::vector<Value *> &values);
+    Value(const std::vector<std::string> &keys, const std::vector<Value *> &values, bool deep_copy = true);
 
     ~Value();
 

@@ -80,19 +80,25 @@ GPStore::Value::Value(const std::vector<uint_64>& node_id, const std::vector<uin
     }
 }
 
-GPStore::Value::Value(const std::vector<Value *> &list_):type_(LIST){
+GPStore::Value::Value(const std::vector<Value *> &list_, bool deep_copy):type_(LIST){
     data_.List = new vector<Value *>();
-    for(const Value *v : list_){
-        data_.List->push_back(ValueDeepCopy(v));
+    for(Value *v : list_){
+        if(deep_copy)
+            data_.List->push_back(ValueDeepCopy(v));
+        else
+            data_.List->push_back(v);
     }
 }
 
-GPStore::Value::Value(const std::vector<std::string> &keys, const std::vector<Value *> &values):type_(MAP) {
+GPStore::Value::Value(const std::vector<std::string> &keys, const std::vector<Value *> &values, bool deep_copy):type_(MAP) {
     data_.Map = new map<std::string, Value *>();
     uint_64 n = keys.size();
     assert(values.size() == n);
     for(uint_64 i = 0; i < n; ++i){
-        data_.Map->insert(make_pair(keys[i], ValueDeepCopy(values[i])));
+        if(deep_copy)
+            data_.Map->insert(make_pair(keys[i], ValueDeepCopy(values[i])));
+        else
+            data_.Map->insert(make_pair(keys[i], values[i]));
     }
 }
 
