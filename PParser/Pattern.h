@@ -37,6 +37,7 @@ public:
 
     // for update clauses, may be parameters, e.g. CREATE (a $prop)
     std::map<std::string, GPStore::Expression> properties_;
+    std::map<std::string, unsigned> prop_id_;
     std::string param_str_;
 
     NodePattern();
@@ -44,12 +45,11 @@ public:
     NodePattern(std::string _constant_str);
     NodePattern(const NodePattern& that);
     NodePattern& operator=(const NodePattern& that);
-
+    bool constraintEmpty() const;
     ~NodePattern();
 
     void print() const;
 };
-
 
 // Support both SPARQL && Cypher EdgeVar
 class EdgePattern{
@@ -80,6 +80,7 @@ public:
 
     // for update clauses, may be parameters, e.g. CREATE (a $1)
     std::map<std::string, Expression> properties_;
+    std::map<std::string, unsigned> prop_id_;
     std::string param_str_;
     EdgePattern();
     EdgePattern(bool is_anno, std::string _var_name, unsigned _var_id, EdgeArrowType _direction);
@@ -87,7 +88,7 @@ public:
     EdgePattern(std::string constant_str);
     EdgePattern(const EdgePattern& that);
     EdgePattern& operator= (const EdgePattern& that);
-
+    bool constraintEmpty() const;
     ~EdgePattern();
 
     void print() const;

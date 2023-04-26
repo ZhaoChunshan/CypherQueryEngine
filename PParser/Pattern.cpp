@@ -17,7 +17,7 @@ GPStore::NodePattern::NodePattern(std::string _constant_str):type_(NODE_CONST), 
 }
 
 GPStore::NodePattern::NodePattern(const NodePattern& that):type_(that.type_), is_anno_var_(that.is_anno_var_), \
-var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), labels_(that.labels_), properties_(that.properties_), param_str_(that.param_str_){
+var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), labels_(that.labels_), properties_(that.properties_), prop_id_(that.prop_id_),param_str_(that.param_str_){
 
 }
 
@@ -30,12 +30,17 @@ GPStore::NodePattern::operator=(const NodePattern& that){
     var_id_ = that.var_id_;
     labels_ = that.labels_;
     properties_ = that.properties_;
+    prop_id_ = that.prop_id_;
     param_str_ = that.param_str_;
     return *this;
 }
 
 GPStore::NodePattern::~NodePattern(){
 
+}
+
+bool GPStore::NodePattern::constraintEmpty() const{ 
+    return labels_.size() == 0 && properties_.size() == 0 && param_str_.size() == 0;
 }
 
 void GPStore::NodePattern::print() const{
@@ -86,7 +91,7 @@ constant_str_(constant_str), is_edge_length_v_(false), range_left_(1), range_rig
 GPStore::EdgePattern::EdgePattern(const EdgePattern& that):type_(that.type_), arrow_direction_(that.arrow_direction_), \
 is_anno_var_(that.is_anno_var_), var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), \
 is_edge_length_v_(that.is_edge_length_v_), range_left_(that.range_left_), range_right_(that.range_right_), \
-edge_types_(that.edge_types_), properties_(that.properties_), param_str_(that.param_str_){
+edge_types_(that.edge_types_), properties_(that.properties_), prop_id_(that.prop_id_),param_str_(that.param_str_){
 
 }
 
@@ -102,6 +107,7 @@ GPStore::EdgePattern& GPStore::EdgePattern::operator=(const EdgePattern& that){
     range_right_ = that.range_right_;
     edge_types_ = that.edge_types_;
     properties_ = that.properties_;
+    prop_id_ = that.prop_id_;
     param_str_ = that.param_str_;
     return *this;
 }
@@ -109,6 +115,11 @@ GPStore::EdgePattern& GPStore::EdgePattern::operator=(const EdgePattern& that){
 GPStore::EdgePattern::~EdgePattern(){
 
 }
+
+bool GPStore::EdgePattern::constraintEmpty() const{ 
+    return edge_types_.size() == 0 && properties_.size() == 0 && param_str_.size() == 0;
+}
+
 
 void GPStore::EdgePattern::print() const{
     if(type_ == EDGE_CONST){
