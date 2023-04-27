@@ -84,6 +84,11 @@ std::string GPStore::Expression::oprt2String(OperatorType op){
     return "EMPTY OP";
 }
 
+/**
+ * @brief split exp by operator oprt. SPLIT(e1 AND e2 AND e3) = [e1, e2, e3]
+ * @param exp the Expression will be splited
+ * @warning exp will de deleted, you cant use it after split.
+*/
 std::vector<GPStore::Expression*> 
 GPStore::Expression::split(GPStore::Expression *exp, OperatorType oprt){
     std::vector<GPStore::Expression *> split_exps;
@@ -236,6 +241,9 @@ std::string GPStore::Expression::getVariableName() const{
     return dynamic_cast<GPStore::Variable *>(atom_)->var_;
 }
 
+unsigned GPStore::Expression::getVariableId() const{
+    return dynamic_cast<GPStore::Variable *>(atom_)->id_;
+}
 
 void GPStore::Expression::print(int dep) const{
     printHead(dep, "Expression");
@@ -264,12 +272,15 @@ GPStore::AtomPropertyLabels::AtomPropertyLabels(){
 GPStore::AtomPropertyLabels::AtomPropertyLabels(const AtomPropertyLabels &that){
     key_names_ = that.key_names_;
     node_labels_ = that.node_labels_;
+    prop_id_ = that.prop_id_;
 }
 
 GPStore::AtomPropertyLabels& 
 GPStore::AtomPropertyLabels:: operator=(const GPStore::AtomPropertyLabels &that){
+    if(this == &that) return *this;
     key_names_ = that.key_names_;
     node_labels_ = that.node_labels_;
+    prop_id_ = that.prop_id_;
     return *this;
 }
 

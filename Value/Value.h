@@ -1,3 +1,5 @@
+#ifndef VALUE_VALUE_H
+#define VALUE_VALUE_H
 /**
  * 所有的值都组织为Value。 一切赋值，构造都是深拷贝。
  * 警告：
@@ -151,3 +153,4 @@ private:
 
 /* helper functions */
 }
+#endif
