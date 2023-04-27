@@ -22,8 +22,9 @@ set(SOURCES
     PParser/CypherAST.cpp
     PParser/PCypherParser.cpp
     Value/Value.cpp
-    
-	
+    PQuery/PQueryOperator.cpp
+	PQuery/PQueryTree.cpp
+    PQuery/PTempResult.cpp
 	test.cpp
 )
 # Add an executable with the above sources

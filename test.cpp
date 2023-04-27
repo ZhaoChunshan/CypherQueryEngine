@@ -3,6 +3,7 @@
 #include "Value.h"
 #include "Expression.h"
 #include "PCypherParser.h"
+#include "PQueryTree.h"
 #include <fstream>
 #include <memory>
 #include <algorithm>
@@ -119,6 +120,7 @@ int test7(){
     try{
         ast = parser.CypherParse(fin);
         ast->print(0);
+        delete ast;
     } catch (const runtime_error& e){
         cout << e.what() << endl;
     }
@@ -126,9 +128,27 @@ int test7(){
     return 0;
 }
 
+/* 测试八：逻辑执行树 */
+int test8(){
+    PCypherParser parser;
+    std::ifstream fin(QueryPath + "interactive-complex-5.cypher");
+    std::unique_ptr<CypherAST> ast;
+    try{
+        ast.reset( parser.CypherParse(fin));
+        PQueryTree qt;
+        qt.GenerateQueryTree(ast);
+
+    } catch (const runtime_error& e){
+        cout << e.what() << endl;
+    }
+    
+    return 0;
+}
+
+
 int main(){
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7};
-    for(int i = 0; i < 7; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8};
+    for(int i = 0; i < 8; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {
