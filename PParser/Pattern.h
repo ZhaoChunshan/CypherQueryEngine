@@ -117,6 +117,7 @@ public:
     PVarset<unsigned> covered_node_var_id_;
     PVarset<unsigned> covered_edge_var_id_;
     RigidPattern();
+    RigidPattern(const NodePattern& node);
     RigidPattern(const RigidPattern& that);
     RigidPattern& operator=(const RigidPattern& that);
     ~RigidPattern();

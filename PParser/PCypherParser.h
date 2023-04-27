@@ -7,6 +7,7 @@
 #include "Pattern.h"
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
 
 
 class CypherSymbol{
@@ -21,11 +22,16 @@ public:
 };
 
 class SymbolTableStack{
-private:
-    std::vector<std::string> id2string_;
-    std::vector<std::unordered_map<std::string, CypherSymbol>> symbol_tb_st_;
-    unsigned next_var_id_, next_anno_id_;
 public:
+    std::vector<std::string> id2string_;
+    std::unordered_map<std::string, unsigned> prop2id_;
+    // dont map 0xffffffff to any string
+    std::map<unsigned, std::string> prop_id2string_;
+    // the prop_name string must already in database.
+    std::vector<std::unordered_map<std::string, CypherSymbol>> symbol_tb_st_;
+    unsigned next_var_id_, next_anno_id_, next_prop_id_;
+public:
+    SymbolTableStack(){reset();}
     bool exists(const std::string & var) const;
     CypherSymbol& search(const std::string & var) ;
     void insert(const std::string& var_name, const CypherSymbol& sym);
@@ -41,13 +47,17 @@ public:
     std::vector<unsigned> getAllVarId();
     std::vector<unsigned> getAllNamedVarId();
     const std::vector<std::string>& getIdToString(){return id2string_;}
+    unsigned getPropId(const std::string &prop);
 };
 
 /**
-	Parser for Cypher queries, inherited from CypherBaseVisitor, which is
-	automatically generated from the Cypher grammar by ANTLR. Implements
-	visiting important grammatical units, extracts relevant information,
-	and stores in CypherAST (pointed to by cypher_ast_).
+ * @brief Parser for Cypher queries, inherited from CypherBaseVisitor, which is
+ * automatically generated from the Cypher grammar by ANTLR. Implements
+ * visiting important grammatical units, extracts relevant information,
+ * and stores in CypherAST (pointed to by cypher_ast_).
+ * @warning var id will be save, and we have a id=>string map
+ * @warning property name , property id will be save, we have map between them; For an undate clause, a property name may dont have prop id in PStore.
+ * @warning label, type only save name, dont have id now.
 */
 class PCypherParser: public CypherBaseVisitor
 {

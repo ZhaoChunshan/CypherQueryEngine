@@ -79,6 +79,7 @@ CypherAST* PCypherParser::CypherParse(std::istream& in){
     } catch (const std::runtime_error& e1) {
         throw std::runtime_error(e1.what());
     }
+    sym_tb_.pop();
     return nullptr;
 }
 
@@ -130,6 +131,8 @@ antlrcpp::Any PCypherParser::visitOC_RegularQuery(CypherParser::OC_RegularQueryC
         cypher_ast->single_querys_.emplace_back(ptr.release());
     }
     cypher_ast->id2var_name_ = sym_tb_.getIdToString();
+    cypher_ast->prop_id2string_ = sym_tb_.prop_id2string_;
+    cypher_ast->prop2id_ = sym_tb_.prop2id_;
     return cypher_ast;
 }
 
@@ -606,16 +609,19 @@ antlrcpp::Any PCypherParser::visitOC_NodePattern(CypherParser::OC_NodePatternCon
         }else{
             auto map_ctx = ctx->oC_Properties()->oC_MapLiteral();
             std::vector<std::string> keys;
+            std::vector<unsigned> prop_ids;
             std::vector<std::unique_ptr<GPStore::Expression>> values;
             unsigned n = map_ctx->oC_Expression().size();
             for(unsigned i = 0; i < n; ++i){
                 std::cout <<  "property " << i <<std::endl;
                 keys.emplace_back(map_ctx->oC_PropertyKeyName(i)->getText());
+                prop_ids.push_back(sym_tb_.getPropId(keys.back()));
                 values.emplace_back(visitOC_Expression(map_ctx->oC_Expression(i)).as<GPStore::Expression*>());
                 std::cout <<  "emd property " << i <<std::endl;
             }
             for(int i = 0; i < n; ++i){
                 node->properties_.emplace(make_pair(keys[i], *values[i]));
+                node->prop_id_.emplace(std::make_pair(keys[i], prop_ids[i]));
             }
         }
     }
@@ -686,14 +692,17 @@ antlrcpp::Any PCypherParser::visitOC_RelationshipPattern(CypherParser::OC_Relati
         }else{
             auto map_ctx = detail_ctx->oC_Properties()->oC_MapLiteral();
             std::vector<std::string> keys;
+            std::vector<unsigned> prop_ids;
             std::vector<std::unique_ptr<GPStore::Expression>> values;
             unsigned n = map_ctx->oC_Expression().size();
             for(unsigned i = 0; i < n; ++i){
                 keys.emplace_back(map_ctx->oC_PropertyKeyName(i)->getText());
+                prop_ids.push_back(sym_tb_.getPropId(keys.back()));
                 values.emplace_back(visitOC_Expression(map_ctx->oC_Expression(i)).as<GPStore::Expression*>());
             }
             for(int i = 0; i < n; ++i){
                 edge->properties_.emplace(make_pair(keys[i], *values[i]));
+                edge->prop_id_.emplace(make_pair(keys[i], prop_ids[i]));
             }
         }
     }
@@ -1189,6 +1198,10 @@ antlrcpp::Any PCypherParser::visitOC_PropertyOrLabelsExpression(CypherParser::OC
         }
         if(atom->atom_type_ == GPStore::Atom::VARIABLE && exp->property_label_->key_names_.size()){
             // TODO: covered propery.
+            unsigned prop_id = sym_tb_.getPropId(exp->property_label_->key_names_[0]);
+            exp->property_label_->prop_id_ = prop_id;
+            exp->covered_props_.addVar(std::make_pair(
+                dynamic_cast<GPStore::Variable*>(atom)->id_, prop_id));
         }
         return exp;
     } else if(atom->atom_type_ == GPStore::Atom::PARENTHESIZED_EXPRESSION){
@@ -1510,8 +1523,12 @@ void SymbolTableStack::clear(){
 
 void SymbolTableStack::reset(){
     symbol_tb_st_.clear();
+    id2string_.clear();
+    prop2id_.clear();
+    prop_id2string_.clear();
     next_var_id_ = 0;
     next_anno_id_ = 0;
+    next_prop_id_ = 0;
 }
 
 
@@ -1550,4 +1567,21 @@ std::vector<unsigned> SymbolTableStack::getAllNamedVarId(){
         }
     }
     return var_ids.vars;
+}
+
+/**
+ * @brief Return the prop id of a prop name, and save the id<->prop map.
+*/
+unsigned SymbolTableStack::getPropId(const std::string &prop){
+    auto it = prop2id_.find(prop);
+    if(it != prop2id_.end()){
+        return it->second;
+    } else {
+        // access PStore here! We use fake id now.
+        unsigned new_id = next_prop_id_++;
+        // we dont check new_id == 0xfffffff, it is not important
+        prop2id_.insert(std::make_pair(prop, new_id));
+        prop_id2string_.insert(std::make_pair(new_id, prop));
+        return new_id;
+    }
 }

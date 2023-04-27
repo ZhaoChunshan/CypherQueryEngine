@@ -158,6 +158,13 @@ GPStore::RigidPattern::RigidPattern(){
 
 }
 
+GPStore::RigidPattern::RigidPattern(const GPStore::NodePattern& node):type_(PATH), 
+is_anno_var_(true){
+    nodes_.emplace_back(node);
+    covered_node_var_id_.addVar(node.var_id_);
+    covered_var_id_.addVar(node.var_id_);
+}
+
 GPStore::RigidPattern::RigidPattern(const RigidPattern& that):type_(that.type_),
 var_name_(that.var_name_), var_id_(that.var_id_), is_anno_var_(that.is_anno_var_),
 nodes_(that.nodes_), edges_(that.edges_), covered_var_id_(that.covered_var_id_), covered_node_var_id_(that.covered_node_var_id_), covered_edge_var_id_(that.covered_edge_var_id_){
