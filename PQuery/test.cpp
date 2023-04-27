@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include "PVarset.h"
+#include "PUtil.h"
 using namespace std;
 
 int main(){
@@ -23,6 +24,21 @@ int main(){
     ma.insert(make_pair("122", 2));
     for(auto &p : ma){
     cout << p.first << " "<<p.second<<endl;
+    }
+    std::vector<std::vector<bool>> adj;
+    for(int i =0 ; i < 10;++i){
+        adj.emplace_back();
+        for(int j =0; j < 10; ++j){
+            adj[i].push_back(true);
+        }
+    }
+    for(int i = 0; i < 10;++i){
+        adj[i][4] = adj[4][i] = false;
+    }
+    adj[4][4] = true;
+    auto vec = calculateConnectedComponent(adj);
+    for(auto i : vec){
+        std::cout << " " << i ;
     }
     return 0;
 }

@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <string>
 #include "../Value/Value.h"
+#include "../PParser/CypherAST.h"
 
 class PQueryTree{
 public:
@@ -10,14 +11,28 @@ public:
     /* root of the query tree, each node is PQueryOperator */
     PQueryOperator *root_;
     /* Cypher global paramters */
-    std::unordered_map<std::string, GPStore::Value> param_;
-
+    std::shared_ptr<std::unordered_map<std::string, GPStore::Value>> param_;
+    /* Variable id to string */
+    std::vector<std::string> id2var_name_;
+    /* Property id to string */
+    std::map<unsigned, std::string> prop_id2string_;
+    /* string to prop id */
+    std::unordered_map<std::string, unsigned> prop2id_;
     PQueryTree();
-    PQueryTree(Mode mode);
     ~PQueryTree();
 
     GPStore::Value setParam(const std::string& param_name, const GPStore::Value &val);
     GPStore::Value getParam(const std::string& param_name);
+    bool existParam(const std::string& param_name);
+    void GenerateQueryTree(const std::unique_ptr<CypherAST>& ast);
+    PQueryOperator * GenerateQueryTree(const std::unique_ptr<SingleQueryAST>& ast);
+    PQueryOperator * GenerateQueryTree(const std::unique_ptr<QueryUnitAST>& ast, PQueryOperator * tree);
+    PQueryOperator * GenerateQueryTree(const std::unique_ptr<MatchAST>& ast);
+
+    PQueryOperator * GenerateQueryTree(const std::unique_ptr<UnwindAST>& ast, PQueryOperator * tree);
+    PQueryOperator * GenerateQueryTree(const std::unique_ptr<InQueryCallAST>& ast, PQueryOperator * tree);
+
+    PQueryOperator * GenerateQueryTree(const std::unique_ptr<WithReturnAST> &ast, PQueryOperator * tree);
 };
 
 
