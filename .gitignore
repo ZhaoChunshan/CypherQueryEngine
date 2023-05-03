@@ -2,4 +2,5 @@ test
 build
 cmake-build-debug
 PQuery/test
-PQuery/test.cpp
+PQuery/test.cp
+.idea
