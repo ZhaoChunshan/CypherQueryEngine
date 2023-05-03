@@ -314,7 +314,7 @@ PQueryOperator * PQueryOperator::partitionConnectedComponent(PQueryOperator *bgp
             bgp.reset(nullptr);
             tmp->left_ = root;
             tmp->right_ = bgp_ptr;
-            tmp->maximal_varset_ = root->maximal_varset_ + bgp->maximal_varset_;
+            tmp->maximal_varset_ = root->maximal_varset_ + bgp_ptr->maximal_varset_;
             root = tmp;
             
             /* consider related filters*/

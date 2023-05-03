@@ -186,7 +186,6 @@ bool GPStore::Expression::isVariable() const{
 }
 
 bool GPStore::Expression::containsAggrFunc() const{
-    std::cout <<  "IN Expression::containsAggrFunc()" << std::endl;
     if(oprt_ == EMPTY_OP){
         for(auto child : children_){
             if(child->containsAggrFunc())
@@ -232,8 +231,6 @@ bool GPStore::Expression::containsAggrFunc() const{
 
         }
     }
-    std::cout <<  "OUT OF Expression::containsAggrFunc()" << std::endl;
-
     return false;
 }
 

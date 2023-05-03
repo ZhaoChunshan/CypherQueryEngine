@@ -149,7 +149,6 @@ antlrcpp::Any PCypherParser::visitOC_StandaloneCall(CypherParser::OC_StandaloneC
 */
 antlrcpp::Any PCypherParser::visitOC_SingleQuery(CypherParser::OC_SingleQueryContext *ctx)
 {
-    std::cout <<  "Visit single Query" << std::endl;
     if(ctx->oC_SinglePartQuery()){
         auto query_unit =  visitOC_SinglePartQuery(ctx->oC_SinglePartQuery()).as<QueryUnitAST*>();
         auto single_query = new SingleQueryAST();
@@ -167,7 +166,6 @@ antlrcpp::Any PCypherParser::visitOC_SingleQuery(CypherParser::OC_SingleQueryCon
  * @return QueryUnitAST*.
 */
 antlrcpp::Any PCypherParser::visitOC_SinglePartQuery(CypherParser::OC_SinglePartQueryContext *ctx){
-    std::cout <<  "Visit single Part Query" <<std::endl;
 
     std::vector<std::unique_ptr<ReadingAST>> readings;
     std::vector<std::unique_ptr<UpdatingAST>> updatings;
@@ -182,12 +180,10 @@ antlrcpp::Any PCypherParser::visitOC_SinglePartQuery(CypherParser::OC_SinglePart
         UpdatingAST *updating = visitOC_UpdatingClause(update_ctx).as<UpdatingAST*>();
         updatings.emplace_back(updating);
 	}
-    std::cout <<  "In SignlePARTQuery end read&update" <<std::endl;
 
 	if(ctx->oC_Return()){
 		with_return = visitOC_Return(ctx->oC_Return()).as<WithReturnAST*>();
 	}
-    std::cout <<  "In SignlePARTQuery end rreturn cls" <<std::endl;
     QueryUnitAST *query_unit = new QueryUnitAST();
     for(auto& read : readings){
         query_unit->reading_.emplace_back(read.release());
@@ -250,7 +246,6 @@ antlrcpp::Any PCypherParser::visitOC_MultiPartQuery(CypherParser::OC_MultiPartQu
  * @return ReadingAST *
 */
 antlrcpp::Any PCypherParser::visitOC_ReadingClause(CypherParser::OC_ReadingClauseContext *ctx){
-    std::cout <<  "Visit Reading cls" <<std::endl;
     if(ctx->oC_Match()){
         return dynamic_cast<ReadingAST *>(  visitOC_Match(ctx->oC_Match()).as<MatchAST*>()  );
     }else if(ctx->oC_Unwind()){
@@ -258,7 +253,6 @@ antlrcpp::Any PCypherParser::visitOC_ReadingClause(CypherParser::OC_ReadingClaus
     } else {
         return dynamic_cast<ReadingAST *>( visitOC_InQueryCall(ctx->oC_InQueryCall()).as<InQueryCallAST *>() );
     }
-    std::cout <<  "emd Visit read cls" <<std::endl;
 }
 
 /**
@@ -286,7 +280,6 @@ antlrcpp::Any PCypherParser::visitOC_UpdatingClause(CypherParser::OC_UpdatingCla
  * @return MatchAST *
 */
 antlrcpp::Any PCypherParser::visitOC_Match(CypherParser::OC_MatchContext *ctx){
-    std::cout <<  "Visit MATCH " <<std::endl;
     std::vector<std::unique_ptr<GPStore::RigidPattern>> rigid_patterns;
     std::unique_ptr<GPStore::Expression> exp;
 
@@ -383,7 +376,6 @@ antlrcpp::Any PCypherParser::visitOC_Return(CypherParser::OC_ReturnContext *ctx)
  * @return GPStore::WithReturnAST *
 */
 antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionBodyContext *ctx, bool is_with){
-    std::cout <<  "Visit proj body" <<std::endl;
 
     std::unique_ptr<WithReturnAST> with_return(new WithReturnAST());    
     with_return->with_ = is_with;
@@ -394,8 +386,7 @@ antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionB
         with_return->proj_exp_.emplace_back(
             visitOC_Expression(proj_ctx->oC_Expression()).as<GPStore::Expression*>()
         );
-       std::cout << "FINISH A PROJECTION EXP\n";
-        if(with_return->proj_exp_.back()->containsAggrFunc()) 
+        if(with_return->proj_exp_.back()->containsAggrFunc())
             with_return->aggregation_ = true;
         with_return->proj_exp_text_.emplace_back(proj_ctx->oC_Expression()->getText());
         if(proj_ctx->oC_Variable()){
@@ -473,8 +464,7 @@ antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionB
     if(ctx->oC_Skip()){
         with_return->skip_.reset(visitOC_Expression(ctx->oC_Skip()->oC_Expression()).as<GPStore::Expression*>());
     }
-    std::cout <<  "END proj bdy" <<std::endl;
-    
+
     if(!with_return->asterisk_)
         sym_tb_.clearExcept(with_return->column_name_);
 
@@ -486,7 +476,6 @@ antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionB
  * @return GPStore::RigidPattern *
 */
 antlrcpp::Any PCypherParser::visitOC_PatternPart(CypherParser::OC_PatternPartContext *ctx){
-    std::cout <<  "Visit PATPART" <<std::endl;
     std::unique_ptr<GPStore::RigidPattern> rigid;
     
     if(ctx->oC_AnonymousPatternPart()->oC_ShortestPathPattern()){
@@ -534,27 +523,24 @@ antlrcpp::Any PCypherParser::visitOC_PatternPart(CypherParser::OC_PatternPartCon
  * @return GPStore::RigidPattern *
 */
 antlrcpp::Any PCypherParser::visitOC_PatternElement(CypherParser::OC_PatternElementContext *ctx){
-    std::cout <<  "Visit PatternElem" <<std::endl;
     if(ctx->oC_PatternElement()){
         return visitOC_PatternElement(ctx->oC_PatternElement());
     }
     std::unique_ptr<GPStore::RigidPattern> rigid(new GPStore::RigidPattern());
     std::unique_ptr<GPStore::NodePattern> node(visitOC_NodePattern(ctx->oC_NodePattern()).as<GPStore::NodePattern*>());
-    std::cout <<  "{PatternELm} Insert fisrt node" <<std::endl;
     std::unique_ptr<GPStore::EdgePattern> edge;
     rigid->nodes_.emplace_back(*node);
     rigid->covered_node_var_id_.addVar(node->var_id_);
-    rigid->covered_node_var_id_.addVar(node->var_id_);
+    rigid->covered_var_id_.addVar(node->var_id_);
     rigid->type_ = GPStore::RigidPattern::PATH;
 
     for(auto chain_ctx : ctx->oC_PatternElementChain()){
-        std::cout <<  "Consider chain node edge " << chain_ctx->getText() <<std::endl;
         edge.reset(visitOC_RelationshipPattern(chain_ctx->oC_RelationshipPattern()).as<GPStore::EdgePattern *>());
         node.reset(visitOC_NodePattern(chain_ctx->oC_NodePattern()).as<GPStore::NodePattern*>());
         
 
         rigid->covered_node_var_id_.addVar(node->var_id_);
-        rigid->covered_node_var_id_.addVar(node->var_id_);
+        rigid->covered_var_id_.addVar(node->var_id_);
 
         rigid->covered_edge_var_id_.addVar(edge->var_id_);
         rigid->covered_var_id_.addVar(edge->var_id_);
@@ -562,7 +548,6 @@ antlrcpp::Any PCypherParser::visitOC_PatternElement(CypherParser::OC_PatternElem
         rigid->nodes_.emplace_back(*node);
         rigid->edges_.emplace_back(*edge);
     }
-    std::cout <<  "End of patelm" <<std::endl;
     return rigid.release();
 }
 
@@ -572,19 +557,15 @@ antlrcpp::Any PCypherParser::visitOC_PatternElement(CypherParser::OC_PatternElem
  * @return GPStore::NodePattern *
 */
 antlrcpp::Any PCypherParser::visitOC_NodePattern(CypherParser::OC_NodePatternContext *ctx){
-    std::cout <<  "Visit node\\pat "<< ctx->getText() <<std::endl;
     std::unique_ptr<GPStore::NodePattern> node(new GPStore::NodePattern());
     node->type_ = GPStore::NodePattern::NODE_VAR;
     if(ctx->oC_Variable()){
         node->var_name_ = ctx->oC_Variable()->getText();
         node->is_anno_var_ = false;
-        std::cout <<  "Checkvar name" <<std::endl;
         if(sym_tb_.exists(node->var_name_)){
-            std::cout <<  "var: " << node->var_name_ << "is exist" <<std::endl;
             // TODO: CHECK type .
             node->var_id_ = sym_tb_.search(node->var_name_).var_id_;
         } else {
-            std::cout <<  "var: " << node->var_name_ << "not exist" <<std::endl;
             node->var_id_ = sym_tb_.getNextVarId();
             sym_tb_.insert(node->var_name_,CypherSymbol::NODE_VAR,node->var_id_);
             sym_tb_.putString(node->var_name_);
@@ -602,7 +583,6 @@ antlrcpp::Any PCypherParser::visitOC_NodePattern(CypherParser::OC_NodePatternCon
             node->labels_.emplace_back(node_label_ctx->oC_LabelName()->getText());
         }
     }
-    std::cout <<  "VisitNOdeprop" <<std::endl;
     if(ctx->oC_Properties()){
         if(ctx->oC_Properties()->oC_Parameter()){
             node->param_str_ = ctx->oC_Properties()->oC_Parameter()->oC_SymbolicName()->getText();
@@ -613,11 +593,9 @@ antlrcpp::Any PCypherParser::visitOC_NodePattern(CypherParser::OC_NodePatternCon
             std::vector<std::unique_ptr<GPStore::Expression>> values;
             unsigned n = map_ctx->oC_Expression().size();
             for(unsigned i = 0; i < n; ++i){
-                std::cout <<  "property " << i <<std::endl;
                 keys.emplace_back(map_ctx->oC_PropertyKeyName(i)->getText());
                 prop_ids.push_back(sym_tb_.getPropId(keys.back()));
                 values.emplace_back(visitOC_Expression(map_ctx->oC_Expression(i)).as<GPStore::Expression*>());
-                std::cout <<  "emd property " << i <<std::endl;
             }
             for(int i = 0; i < n; ++i){
                 node->properties_.emplace(make_pair(keys[i], *values[i]));
@@ -625,8 +603,6 @@ antlrcpp::Any PCypherParser::visitOC_NodePattern(CypherParser::OC_NodePatternCon
             }
         }
     }
-    std::cout <<  "VisitNodeEND" <<std::endl;
-    return node.release();
 }
 
 /**
@@ -674,7 +650,7 @@ antlrcpp::Any PCypherParser::visitOC_RelationshipPattern(CypherParser::OC_Relati
             edge->edge_types_.emplace_back(rela_type_ctx->getText());
         }
     }
-
+    edge->is_edge_length_v_ = false;
     if(detail_ctx->oC_RangeLiteral()){
         auto range_ = (std::pair<unsigned long long, unsigned long long>*)visitOC_RangeLiteral(detail_ctx->oC_RangeLiteral()).as<void*>();
         if(range_->first == range_->second && range_->first == 1){
@@ -764,7 +740,6 @@ antlrcpp::Any PCypherParser::visitOC_RangeLiteral(CypherParser::OC_RangeLiteralC
  * @return GPStore::Expression *
 */
 antlrcpp::Any PCypherParser::visitOC_Expression(CypherParser::OC_ExpressionContext *ctx){
-    std::cout <<  "Expression: " << ctx->getText() <<std::endl;
     return visitOC_OrExpression(ctx->oC_OrExpression());
 }
 
@@ -903,6 +878,15 @@ antlrcpp::Any PCypherParser::visitOC_ComparisonExpression(CypherParser::OC_Compa
 
     unsigned n = oprts.size();
     GPStore::Expression *exp = new GPStore::Expression();
+    if( n == 1 ){
+        exp->oprt_ = oprts[0];
+        exp->children_.push_back(slnp_exps[0].release());
+        exp->children_.push_back(slnp_exps[1].release());
+        exp->covered_var_id_ = exp->children_[0]->covered_var_id_ + exp->children_[1]->covered_var_id_;
+        exp->covered_props_ = exp->children_[0]->covered_props_ + exp->children_[1]->covered_props_;
+        return exp;
+    }
+
     exp->oprt_ = GPStore::Expression::AND;
     for(unsigned i = 0; i < n; ++i){
         //slnp_exp i, i + 1; use i and copy i + 1
@@ -962,13 +946,11 @@ antlrcpp::Any PCypherParser::visitOC_StringListNullPredicateExpression(CypherPar
         }
         else if(lst_pre_ptr < ctx->oC_ListPredicateExpression().size() &&
         ctx->oC_ListPredicateExpression(lst_pre_ptr)->getText() == text){
-            std::cout << "--------CONSIDER LIST IN PREDICATE\n";
             addsub_exp = visitOC_AddOrSubtractExpression(
                 ctx->oC_ListPredicateExpression(lst_pre_ptr)->oC_AddOrSubtractExpression()
             ).as<GPStore::Expression*>();
             oprt = GPStore::Expression::IN;
             ++lst_pre_ptr;
-            std::cout << "--------END CONSIDER LIST IN PREDICATE\n";
 
         } 
         else if(null_pre_ptr < ctx->oC_NullPredicateExpression().size() &&
@@ -990,7 +972,6 @@ antlrcpp::Any PCypherParser::visitOC_StringListNullPredicateExpression(CypherPar
 
             tmp->children_.push_back(exp.release());
         } else {
-            std::cout << "--------try construct new exp in list IN\n";
 
             tmp->oprt_ = oprt;
             tmp->covered_var_id_ = exp->covered_var_id_ + addsub_exp->covered_var_id_;
@@ -998,13 +979,11 @@ antlrcpp::Any PCypherParser::visitOC_StringListNullPredicateExpression(CypherPar
 
             tmp->children_.push_back(exp.release());
             tmp->children_.push_back(addsub_exp);
-            std::cout << "--------ending try construct new exp in list IN\n";
 
         }
         exp.reset(tmp);
     } // for(unsigned i = 1; i < n; ++i)
-    std::cout << "----!!!!----END slnp exp\n";
-    
+
     return exp.release();
 }
 

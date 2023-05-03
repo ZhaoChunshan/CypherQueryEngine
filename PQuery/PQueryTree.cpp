@@ -84,9 +84,9 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<QueryUnitAS
             // Match Region i, i + 1, ..., j - 1 
             std::vector<PQueryOperator*> bgps;
             for(int k = i; k < j; ++k){
-                std::unique_ptr<MatchAST> match (dynamic_cast<MatchAST*>(ast->reading_[k].release()));
-                bgps.push_back(GenerateQueryTree(match));
-                ast->reading_[k].reset(dynamic_cast<ReadingAST*>(match.release()));
+                MatchAST * match = dynamic_cast<MatchAST*>(ast->reading_[k].get());
+                auto match_bgp = GenerateQueryTree(match);
+                bgps.push_back(match_bgp);
             }
             PQueryOperator *total_bgp = PQueryOperator::mergeBGP(bgps);
             for(auto bgp : bgps) delete bgp;
@@ -97,12 +97,12 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<QueryUnitAS
             i = j; // iter i to j
         } else if(read->reading_form_ == ReadingAST::MATCH){
             // do optional match
-            std::unique_ptr<MatchAST> match(dynamic_cast<MatchAST*>(read.release()));
+            MatchAST * match = dynamic_cast<MatchAST*>(read.get());
             auto bgp = GenerateQueryTree(match);
             auto right = PQueryOperator::partitionConnectedComponent(bgp, nullptr);
             delete bgp;
             tree = PQueryOperator::generateBinaryOperator(tree ,right, PQueryOperator::OPTIONAL);
-            read.reset(dynamic_cast<ReadingAST*>(match.release()));
+
         } else if( read->reading_form_ == ReadingAST::UNWIND){
             std::unique_ptr<UnwindAST> unwind(dynamic_cast<UnwindAST *>(read.release()));
             tree = GenerateQueryTree(unwind, tree);
@@ -137,7 +137,7 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<QueryUnitAS
  *  occur in this bgp. You should handle this case.
  * @param ast pointer to MatchAST
 */
-PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<MatchAST>& ast){
+PQueryOperator * PQueryTree::GenerateQueryTree(const MatchAST *ast){
     PQueryOperator *bgp = new PQueryOperator(PQueryOperator::BGP);
     std::unique_ptr<GPStore::Expression> exp;
     PVarset<unsigned> covered_edge_var;
@@ -192,10 +192,12 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<MatchAST>& 
     }
     
     /* Handle filter in where clause */
-    auto exps = GPStore::Expression::split(new GPStore::Expression(*ast->where_), GPStore::Expression::AND);
-    for(auto split_exp : exps){
-        bgp->filters_.emplace_back(*split_exp);
-        delete split_exp;
+    if(ast->where_ != nullptr){
+        auto exps = GPStore::Expression::split(new GPStore::Expression(*ast->where_), GPStore::Expression::AND);
+        for(auto split_exp : exps){
+            bgp->filters_.emplace_back(*split_exp);
+            delete split_exp;
+        }
     }
     return bgp;
 }

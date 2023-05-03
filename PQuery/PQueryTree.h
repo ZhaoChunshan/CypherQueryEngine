@@ -27,7 +27,7 @@ public:
     void GenerateQueryTree(const std::unique_ptr<CypherAST>& ast);
     PQueryOperator * GenerateQueryTree(const std::unique_ptr<SingleQueryAST>& ast);
     PQueryOperator * GenerateQueryTree(const std::unique_ptr<QueryUnitAST>& ast, PQueryOperator * tree);
-    PQueryOperator * GenerateQueryTree(const std::unique_ptr<MatchAST>& ast);
+    PQueryOperator * GenerateQueryTree(const MatchAST *ast);
 
     PQueryOperator * GenerateQueryTree(const std::unique_ptr<UnwindAST>& ast, PQueryOperator * tree);
     PQueryOperator * GenerateQueryTree(const std::unique_ptr<InQueryCallAST>& ast, PQueryOperator * tree);

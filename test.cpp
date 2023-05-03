@@ -10,7 +10,7 @@
 #include <iostream>
 using namespace std;
 
-std::string QueryPath = "../Queries/";
+std::string QueryPath = "Queries/";
 
 /* 测试一：对IntValue * 排序 */
 int test1(){
@@ -108,14 +108,14 @@ int test6(){
     exp2->atom_ = new GPStore::Variable(string("Var2"));
     exp.children_.push_back(exp1);
     exp.children_.push_back(exp2);
-    // exp.print(0);
+    //exp.print(0);
     return 0;
 }
 
 /* 测试七: 抽象语法树 */
 int test7(){
     PCypherParser parser;
-    std::ifstream fin(QueryPath + "interactive-complex-5.cypher");
+    std::ifstream fin(QueryPath + "interactive-complex-1.cypher");
     CypherAST *ast = nullptr;
     try{
         ast = parser.CypherParse(fin);
@@ -131,7 +131,8 @@ int test7(){
 /* 测试八：逻辑执行树 */
 int test8(){
     PCypherParser parser;
-    std::ifstream fin(QueryPath + "interactive-complex-5.cypher");
+    // interactive-short-6.cypher
+    std::ifstream fin(QueryPath + "interactive-complex-3.cypher");
     std::unique_ptr<CypherAST> ast;
     try{
         ast.reset( parser.CypherParse(fin));
