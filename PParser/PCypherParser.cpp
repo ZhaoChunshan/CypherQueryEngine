@@ -603,6 +603,7 @@ antlrcpp::Any PCypherParser::visitOC_NodePattern(CypherParser::OC_NodePatternCon
             }
         }
     }
+    return node.release();
 }
 
 /**

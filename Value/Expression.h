@@ -53,7 +53,7 @@ public:
 
     // 变量覆盖集合
     PVarset<unsigned> covered_var_id_;
-    // 属性覆盖集合 a.age 暂未实现，因为要调用PStore
+    // 属性覆盖集合 a.age
     PVarset<std::pair<unsigned, unsigned>> covered_props_;
 
     Expression();

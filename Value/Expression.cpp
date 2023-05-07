@@ -117,7 +117,7 @@ GPStore::Expression::Expression():oprt_(EMPTY_OP), atom_(nullptr), property_labe
 
 }   
 
-GPStore::Expression::Expression(const Expression& that):atom_(nullptr), property_label_(nullptr){
+GPStore::Expression::Expression(const Expression& that):oprt_(EMPTY_OP), atom_(nullptr), property_label_(nullptr){
     if(that.isAtom()){ 
         atom_ = AtomDeepCopy(that.atom_);
         if(that.property_label_ != nullptr){
@@ -182,11 +182,11 @@ bool GPStore::Expression::isAtom() const{
 }
 
 bool GPStore::Expression::isVariable() const{
-    return oprt_ == EMPTY_OP && atom_ != nullptr && atom_->atom_type_ == Atom::VARIABLE;
+    return oprt_ == EMPTY_OP && atom_ != nullptr && atom_->atom_type_ == Atom::VARIABLE && property_label_ == nullptr;
 }
 
 bool GPStore::Expression::containsAggrFunc() const{
-    if(oprt_ == EMPTY_OP){
+    if(oprt_ != EMPTY_OP){
         for(auto child : children_){
             if(child->containsAggrFunc())
                 return true;

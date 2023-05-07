@@ -28,21 +28,21 @@ bool PQueryTree::existParam(const std::string& param_name){
  * @brief generate a query tree for a cypher query
  * @return root of the plan tree
 */
-void PQueryTree::GenerateQueryTree(const std::unique_ptr<CypherAST>& ast){
+void PQueryTree::GenerateQueryTree(const CypherAST* ast){
     mode_ = Cypher;
     id2var_name_ = ast->id2var_name_;
     prop2id_ = ast->prop2id_;
     prop_id2string_ = ast->prop_id2string_;
     if(ast->union_all_.size() == 0){
-        root_ = GenerateQueryTree(ast->single_querys_[0]);
+        root_ = GenerateQueryTree(ast->single_querys_[0].get());
         return;
     }
 
     int n = ast->union_all_.size();
     std::unique_ptr<PQueryOperator> tree;
-    tree.reset(GenerateQueryTree(ast->single_querys_[0]));
+    tree.reset(GenerateQueryTree(ast->single_querys_[0].get()));
     for(int i = 1; i <= n; ++i){
-        PQueryOperator *right = GenerateQueryTree(ast->single_querys_[i]);
+        PQueryOperator *right = GenerateQueryTree(ast->single_querys_[i].get());
         PQueryOperator *left = tree.release();
         tree.reset(new PQueryOperator(PQueryOperator::UNION));
         tree->left_ = left;
@@ -54,10 +54,10 @@ void PQueryTree::GenerateQueryTree(const std::unique_ptr<CypherAST>& ast){
     root_ = tree.release();
 }
 
-PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<SingleQueryAST>& ast){
+PQueryOperator * PQueryTree::GenerateQueryTree(const SingleQueryAST* ast){
     PQueryOperator * tree = nullptr;
     for(const auto & query_unit : ast->query_units_){
-        tree = GenerateQueryTree(query_unit, tree);
+        tree = GenerateQueryTree(query_unit.get(), tree);
     }
     return tree;
 }
@@ -67,7 +67,7 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<SingleQuery
  * @param ast a pointer to QueryUnitAST
  * @param tree plan tree that we already have
 */
-PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<QueryUnitAST>& ast, PQueryOperator * tree){
+PQueryOperator * PQueryTree::GenerateQueryTree(const QueryUnitAST* ast, PQueryOperator * tree){
 
     /// Handle reading clauses
     int n = (int)ast->reading_.size();
@@ -104,20 +104,16 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<QueryUnitAS
             tree = PQueryOperator::generateBinaryOperator(tree ,right, PQueryOperator::OPTIONAL);
 
         } else if( read->reading_form_ == ReadingAST::UNWIND){
-            std::unique_ptr<UnwindAST> unwind(dynamic_cast<UnwindAST *>(read.release()));
-            tree = GenerateQueryTree(unwind, tree);
-            read.reset(dynamic_cast<ReadingAST*>(unwind.release()));
+            tree = GenerateQueryTree(dynamic_cast<const UnwindAST *>(read.get()), tree);
         } else if( read->reading_form_ == ReadingAST::INQUERY_CALL){
-            std::unique_ptr<InQueryCallAST> iqcall(dynamic_cast<InQueryCallAST *>(read.release()));
-            tree = GenerateQueryTree(iqcall, tree);
-            read.reset(dynamic_cast<ReadingAST*>(iqcall.release()));
+            tree = GenerateQueryTree(dynamic_cast<const InQueryCallAST *>(read.get()), tree);
         }
     }
 
     /// TODO: Handle updating clauses
 
     /// Handle WithReturn
-    tree = GenerateQueryTree(ast->with_return_, tree);
+    tree = GenerateQueryTree(ast->with_return_.get(), tree);
     /// Clip by return clause
     if(ast->with_return_ == nullptr){
         tree->clipVarset(PVarset<unsigned>());
@@ -207,7 +203,7 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const MatchAST *ast){
  * @param ast pointer to unwind AST
  * @param tree plan tree we already have
 */
-PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<UnwindAST>& ast, PQueryOperator * tree){
+PQueryOperator * PQueryTree::GenerateQueryTree(const UnwindAST* ast, PQueryOperator * tree){
     PQueryOperator * unwind = new PQueryOperator(PQueryOperator::UNWIND);
     unwind->unwind_.reset(new GPStore::Expression(*ast->exp_));
     unwind->unwind_var_id_ = ast->var_id_;
@@ -223,7 +219,7 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<UnwindAST>&
 }
 
 
-PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<InQueryCallAST>& ast, PQueryOperator * tree){
+PQueryOperator * PQueryTree::GenerateQueryTree(const InQueryCallAST* ast, PQueryOperator * tree){
     assert(false);
     return nullptr;
 }
@@ -233,7 +229,7 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<InQueryCall
  * @param ast pointer to withreturn AST
  * @param tree plan tree we already have
 */
-PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<WithReturnAST> &ast, PQueryOperator * tree){
+PQueryOperator * PQueryTree::GenerateQueryTree(const WithReturnAST* ast, PQueryOperator * tree){
     auto proj = new PQueryOperator(PQueryOperator::PROJECTION);
     std::unique_ptr<GPStore::Expression> tmp_exp;
     if(!ast->aggregation_){
@@ -244,8 +240,8 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const std::unique_ptr<WithReturnA
         }
         int n = ast->proj_exp_.size();
         for(int i = 0; i < n; ++i){
-            proj->proj_exps_.emplace_back(*ast->proj_exp_[i]);
-            proj->var_id_.emplace_back(ast->column_var_id_[i]);
+            proj->proj_exps_.emplace_back(*(ast->proj_exp_[i]));
+            proj->var_id_.push_back(ast->column_var_id_[i]);
         }
         proj->left_ = tree;
         proj->maximal_varset_ = proj->var_id_;

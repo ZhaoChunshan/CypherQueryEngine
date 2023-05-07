@@ -24,15 +24,15 @@ public:
     GPStore::Value setParam(const std::string& param_name, const GPStore::Value &val);
     GPStore::Value getParam(const std::string& param_name);
     bool existParam(const std::string& param_name);
-    void GenerateQueryTree(const std::unique_ptr<CypherAST>& ast);
-    PQueryOperator * GenerateQueryTree(const std::unique_ptr<SingleQueryAST>& ast);
-    PQueryOperator * GenerateQueryTree(const std::unique_ptr<QueryUnitAST>& ast, PQueryOperator * tree);
+    void GenerateQueryTree(const CypherAST* ast);
+    PQueryOperator * GenerateQueryTree(const SingleQueryAST* ast);
+    PQueryOperator * GenerateQueryTree(const QueryUnitAST* ast, PQueryOperator * tree);
     PQueryOperator * GenerateQueryTree(const MatchAST *ast);
 
-    PQueryOperator * GenerateQueryTree(const std::unique_ptr<UnwindAST>& ast, PQueryOperator * tree);
-    PQueryOperator * GenerateQueryTree(const std::unique_ptr<InQueryCallAST>& ast, PQueryOperator * tree);
+    PQueryOperator * GenerateQueryTree(const UnwindAST* ast, PQueryOperator * tree);
+    PQueryOperator * GenerateQueryTree(const InQueryCallAST* ast, PQueryOperator * tree);
 
-    PQueryOperator * GenerateQueryTree(const std::unique_ptr<WithReturnAST> &ast, PQueryOperator * tree);
+    PQueryOperator * GenerateQueryTree(const WithReturnAST* ast, PQueryOperator * tree);
 };
 
 

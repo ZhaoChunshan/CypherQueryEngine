@@ -83,6 +83,13 @@ class PVarset
             return r;
         }
 
+        PVarset& operator = (const PVarset & _varset) {
+            if(this == &_varset) return *this;
+            vars = _varset.vars;
+            return *this;
+        }
+
+
         bool operator ==(const PVarset &_varset) const{
             if ((int)this->vars.size() != (int)_varset.vars.size())
                 return false;

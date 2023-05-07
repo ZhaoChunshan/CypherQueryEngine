@@ -137,7 +137,7 @@ int test8(){
     try{
         ast.reset( parser.CypherParse(fin));
         PQueryTree qt;
-        qt.GenerateQueryTree(ast);
+        qt.GenerateQueryTree(ast.get());
 
     } catch (const runtime_error& e){
         cout << e.what() << endl;
