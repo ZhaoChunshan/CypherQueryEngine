@@ -95,7 +95,7 @@ GPStore::Expression::split(GPStore::Expression *exp, OperatorType oprt){
     if(exp->oprt_ != oprt) {
         split_exps.push_back(exp);
     } else {
-        for(auto child : exp->children_){
+        for(auto & child : exp->children_){
             if(child->oprt_ != oprt){
                 split_exps.push_back(child);
             } else {

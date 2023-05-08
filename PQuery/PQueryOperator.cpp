@@ -188,7 +188,15 @@ void PQueryOperator::clipVarset(const PVarset<unsigned> & required){
             minimal_varset_.addVar(edge_pattern_.var_id_);
         minimal_varset_ = minimal_varset_ * required;
     } else if(type_ == ORDER_BY || type_ == GROUP_BY){
-        left_->clipVarset(required);
+        PVarset<unsigned> order_group_required;
+        if(type_ == ORDER_BY){
+            for(auto & exp : order_exps_){
+                order_group_required += exp.covered_var_id_;
+            }
+        }else {
+            order_group_required += PVarset<unsigned >(group_by_key_);
+        }
+        left_->clipVarset(required + order_group_required);
         minimal_varset_ = left_->minimal_varset_;
     } else if(type_ == AGGREGATION){
         PVarset<unsigned> aggr_required;
@@ -532,6 +540,7 @@ PQueryOperator::generateBinaryOperator(PQueryOperator *left, PQueryOperator *rig
     root->left_ = left;
     root->right_ = right;
     root->type_ = op;
+    root->maximal_varset_ = left->maximal_varset_ + right->maximal_varset_;
     return root;
 }
 
@@ -551,4 +560,17 @@ PQueryOperator::generateShortestPath(PQueryOperator *root, const GPStore::RigidP
         tmp->maximal_varset_.addVar(tmp->path_var_id_);
     }
     return tmp;
+}
+
+PQueryOperator *
+PQueryOperator::generateProjectionVars(PQueryOperator *root, const std::vector<unsigned >& vars){
+    auto proj = new PQueryOperator(PROJECTION);
+    std::unique_ptr<GPStore::Expression> tmp_exp;
+    for(auto var : vars){
+        tmp_exp.reset(varIdToExpression(var));
+        proj->proj_exps_.emplace_back(*tmp_exp);
+        proj->var_id_.push_back(var);
+    }
+    proj->minimal_varset_ = proj->maximal_varset_ = PVarset<unsigned >(vars);
+    return proj;
 }

@@ -10,7 +10,7 @@
 #include <iostream>
 using namespace std;
 
-std::string QueryPath = "Queries/";
+std::string QueryPath = "../Queries/";
 
 /* 测试一：对IntValue * 排序 */
 int test1(){
@@ -100,6 +100,12 @@ int test5(){
 
 /* 测试六：表达式 */
 int test6(){
+    GPStore::Expression *exp_var = new GPStore::Expression();
+    GPStore::Variable *var = new GPStore::Variable(string("AVAR"));
+    exp_var->atom_ = var;
+    GPStore::Expression exp_var_copy(*exp_var);
+    delete exp_var;
+    // exp_var_copy.print(0);
     GPStore::Expression exp;
     exp.oprt_ = GPStore::Expression::AND;
     GPStore::Expression *exp1 = new GPStore::Expression();
@@ -119,7 +125,7 @@ int test7(){
     CypherAST *ast = nullptr;
     try{
         ast = parser.CypherParse(fin);
-        ast->print(0);
+        //ast->print(0);
         delete ast;
     } catch (const runtime_error& e){
         cout << e.what() << endl;
@@ -130,18 +136,44 @@ int test7(){
 
 /* 测试八：逻辑执行树 */
 int test8(){
+    const char *s[]= {
+            "interactive-complex-1.cypher",
+            "interactive-complex-2.cypher",
+            "interactive-complex-3.cypher",
+            "interactive-complex-4.cypher",
+            "interactive-complex-5.cypher",
+            "interactive-complex-6.cypher",
+            "interactive-complex-7.cypher",
+            "interactive-complex-8.cypher",
+            "interactive-complex-9.cypher",
+            "interactive-complex-10.cypher",
+            "interactive-complex-11.cypher",
+            "interactive-complex-12.cypher",
+            "interactive-complex-13.cypher",
+            "interactive-complex-14.cypher",
+            "interactive-short-1.cypher",
+            "interactive-short-2.cypher",
+            "interactive-short-3.cypher",
+            "interactive-short-4.cypher",
+            "interactive-short-5.cypher",
+            "interactive-short-6.cypher",
+            "interactive-short-7.cypher"
+    };
     PCypherParser parser;
-    // interactive-short-6.cypher
-    std::ifstream fin(QueryPath + "interactive-complex-3.cypher");
-    std::unique_ptr<CypherAST> ast;
-    try{
-        ast.reset( parser.CypherParse(fin));
-        PQueryTree qt;
-        qt.GenerateQueryTree(ast.get());
-
-    } catch (const runtime_error& e){
-        cout << e.what() << endl;
+    for(int i = 0; i < 21; ++i){
+        std::ifstream fin(QueryPath + string(s[i]));
+        std::unique_ptr<CypherAST> ast;
+        try{
+            ast.reset( parser.CypherParse(fin));
+            PQueryTree qt;
+            qt.GenerateQueryTree(ast.get());
+            cout << "Generate QueryTree For: " << s[i] << " Passed." << endl;
+        } catch (const runtime_error& e){
+            cout << e.what() << endl;
+        }
+        fin.close();
     }
+
     
     return 0;
 }

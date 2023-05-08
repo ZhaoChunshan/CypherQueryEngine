@@ -119,7 +119,12 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const QueryUnitAST* ast, PQueryOp
         tree->clipVarset(PVarset<unsigned>());
     } else if(!ast->with_return_->with_){
         tree->clipVarset(PVarset<unsigned>(ast->with_return_->column_var_id_));
+        /// Some Clip may cant do
+        if(!tree->minimal_varset_.belongTo(PVarset<unsigned >(ast->with_return_->column_var_id_))){
+            tree = PQueryOperator::generateProjectionVars(tree, ast->with_return_->column_var_id_);
+        }
     }
+
     return tree;
 }
 
@@ -183,7 +188,7 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const MatchAST *ast){
     unsigned n = covered_edge_var.getVarsetSize();
     for(unsigned i = 0; i < n; ++i){
         for(unsigned j = i + 1; j < n; ++j){
-            bgp->edge_conflict_.addVar(std::make_pair(i, j));
+            bgp->edge_conflict_.addVar(std::make_pair(covered_edge_var.vars[i], covered_edge_var.vars[j]));
         }
     }
     
@@ -240,7 +245,7 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const WithReturnAST* ast, PQueryO
         }
         int n = ast->proj_exp_.size();
         for(int i = 0; i < n; ++i){
-            proj->proj_exps_.emplace_back(*(ast->proj_exp_[i]));
+            proj->proj_exps_.emplace_back(*ast->proj_exp_[i]);
             proj->var_id_.push_back(ast->column_var_id_[i]);
         }
         proj->left_ = tree;
@@ -266,6 +271,14 @@ PQueryOperator * PQueryTree::GenerateQueryTree(const WithReturnAST* ast, PQueryO
             } else {
                 aggr->aggr_value_.emplace_back(*ast->proj_exp_[i]);
                 aggr->aggr_value_var_id_.push_back(ast->column_var_id_[i]);
+                auto & vars = ast->proj_exp_[i]->covered_var_id_.vars;
+                for(unsigned  var : vars){
+                    if(std::find(proj->var_id_.begin(), proj->var_id_.end(),var)== proj->var_id_.end()){
+                        tmp_exp.reset(PQueryOperator::varIdToExpression(var));
+                        proj->proj_exps_.emplace_back(*tmp_exp);
+                        proj->var_id_.push_back(var);
+                    }
+                }
             }
         }
         proj->left_ = tree;

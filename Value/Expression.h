@@ -104,7 +104,9 @@ public:
     PVarset<std::pair<unsigned, unsigned>> covered_props_;
 
     Atom() = default;
-    virtual ~Atom() = default;
+    virtual ~Atom() {
+
+	}
     virtual void print(int dep)const = 0;
 };
 

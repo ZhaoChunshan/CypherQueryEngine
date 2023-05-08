@@ -107,6 +107,7 @@ public:
 
     static PQueryOperator * generateShortestPath(PQueryOperator *root, const GPStore::RigidPattern &pattern);
 
+    static PQueryOperator * generateProjectionVars(PQueryOperator *root, const std::vector<unsigned >& vars);
 private:
 };
 
