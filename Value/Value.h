@@ -26,17 +26,14 @@ public:
         INTEGER, FLOAT, STRING, BOOLEAN,  // above && their array are storable
         NODE, EDGE, PATH,
         LIST, MAP,
-        NO_VALUE   // Cypher null
-    };
-    
-    enum EdgeType{
-        LEFT_EDGE, RIGHT_EDGE, UNDIRECTED
+        NO_VALUE,   // Cypher null
+        ERROR_VALUE // ERROR
     };
 
+
     struct PathContent{
-        std::vector<EdgeType> edge_type_;
+        std::vector<unsigned > node_id_;
         std::vector<uint_64> edge_id_;
-        std::vector<uint_64> node_id_;
     };
 
     union ValueUnion{
@@ -68,7 +65,7 @@ public:
     Value(Type _type, uint_64 _id);
     /* Construct Path */
     Value(const PathContent &path_);
-    Value(const std::vector<uint_64>& node_id, const std::vector<uint_64> &edge_id, const std::vector<EdgeType>& edge_type);
+    Value(const std::vector<unsigned >& node_id, const std::vector<uint_64> &edge_id);
 
     /* Construct List */
     Value(const std::vector<Value *> &list_, bool deep_copy = true);

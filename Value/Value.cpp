@@ -56,27 +56,17 @@ GPStore::Value::Value(Type _type, uint_64 _id):type_(_type){
 
 GPStore::Value::Value(const PathContent &path_):type_(PATH){
     data_.Path = new PathContent();
-    for(auto node :path_.node_id_){
-        data_.Path->node_id_.push_back(node);
-    }
-    for(auto edge : path_.edge_id_){
-        data_.Path->edge_id_.push_back(edge);
-    }
-    for(auto ty : path_.edge_type_){
-        data_.Path->edge_type_.push_back(ty);
-    }
+    data_.Path->node_id_ = path_.node_id_;
+    data_.Path->edge_id_ = path_.edge_id_;
 }
 
-GPStore::Value::Value(const std::vector<uint_64>& node_id, const std::vector<uint_64> &edge_id, const std::vector<EdgeType>& edge_type):type_(PATH){
+GPStore::Value::Value(const std::vector<unsigned >& node_id, const std::vector<uint_64> &edge_id):type_(PATH){
     data_.Path = new PathContent();
     for(auto node :node_id){
         data_.Path->node_id_.push_back(node);
     }
     for(auto edge : edge_id){
         data_.Path->edge_id_.push_back(edge);
-    }
-    for(auto ty : edge_type){
-        data_.Path->edge_type_.push_back(ty);
     }
 }
 
