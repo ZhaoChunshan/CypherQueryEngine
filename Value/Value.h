@@ -3,12 +3,11 @@
 /**
  * 所有的值都组织为Value。 一切赋值，构造都是深拷贝。
  * 警告：
- * (1)重载的'<'运算符，适用于order by的排序，和表达式中比较大小的'<'不是同一概念
- * (2)重载的'=='运算符，适用于Distinct，Groupby，而不适用与表达式的相等‘=’
- * (3) '<'号中，不支持Map之间的比较（Cypher规范未定义），但'=='支持Map之间的相等判断
- * (4) order by排序，用<即可
- * (5) Distinct，可以先排序再去重，但注意Map之间的去重，只能用暴力的(n^2)的方法，因为Map上没定义'<'关系。
- * (6) hashCode函数暂时保留接口，不用！因为有些古怪。(Map, null, 以及浮点与整形相等...)
+ * (1)int comp(const Value & other) const兼适合比较大小，判断相等
+ * (2)此处的大小只适用于order by的排序，和表达式中比较大小的'<'不是同一概念
+ * (3)所谓相等，语义上适用于Distinct，Groupby，而不适用与表达式的相等‘=’
+ * (4)hashCode函数暂时保留接口，不用
+ * (5)
 */
 
 #include <string>
@@ -76,6 +75,7 @@ public:
     ~Value();
 
     bool isNull() const;
+    bool isErrorValue() const;
     bool storable() const;
 
     bool isIntArray() const;
@@ -90,8 +90,8 @@ public:
     Type getType() const;
     int_64 hashCode() const ;
     bool operator==(const Value& other) const;    // check equivalence for DISTINCT
-    bool operator<(const Value& other) const;     // used for ORDER BY
-
+    bool operator<(const Value& other) const;     // used for ORDER
+    int comp(const Value & other) const;    // return -1 if less than, 1 if greater, 0 if equal
     Value& operator=(const Value&other);
 
     /* get a read-only pointer the the content of a list value */
@@ -119,17 +119,17 @@ private:
     /* Construct Functions */
     void ConstructFrom(const Value& other);
 
-    /* for order by */
-    bool CompareIntWith(const Value &other) const;
-    bool CompareFloatWith(const Value &other) const;
-    bool CompareStringWith(const Value &other) const;
-    bool CompareBooleanWith(const Value &other) const;
-    bool CompareNodeWith(const Value &other) const;
-    bool CompareEdgeWith(const Value &other) const;
-    bool ComparePathWith(const Value &other) const;
-    bool CompareListWith(const Value &other) const;
-    bool CompareMapWith(const Value &other) const;
-    bool CompareNoValueWith(const Value &other) const;
+    /* for order by return -1 if less than, 1 if greater, 0 if equal */
+    int CompareIntWith(const Value &other) const;
+    int CompareFloatWith(const Value &other) const;
+    int CompareStringWith(const Value &other) const;
+    int CompareBooleanWith(const Value &other) const;
+    int CompareNodeWith(const Value &other) const;
+    int CompareEdgeWith(const Value &other) const;
+    int ComparePathWith(const Value &other) const;
+    int CompareListWith(const Value &other) const;
+    int CompareMapWith(const Value &other) const;
+    int CompareNoValueWith(const Value &other) const;
 
     /* for distinct, group by */
     bool IntEqualTo(const Value &other) const;

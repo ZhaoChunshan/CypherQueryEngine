@@ -3,7 +3,9 @@
 #include <math.h>
 #include <set>
 #include <sstream>
+#include <cstring>
 #include <iostream>
+#include <algorithm>
 using namespace std;
 
 GPStore::Value::Value(){
@@ -98,6 +100,10 @@ GPStore::Value::~Value(){
 
 bool GPStore::Value::isNull() const{
     return type_ == NO_VALUE;
+}
+
+bool GPStore::Value::isErrorValue() const {
+    return type_ == ERROR_VALUE;
 }
 
 bool GPStore::Value::storable() const{
@@ -233,6 +239,37 @@ bool GPStore::Value::operator<(const Value& other) const{
     switch (type_)
     {
         case Value::INTEGER:
+            return CompareIntWith(other) == -1;
+        case Value::FLOAT:
+            return CompareFloatWith(other) == -1;
+        case Value::STRING:
+            return CompareStringWith(other) == -1;
+        case Value::BOOLEAN:
+            return CompareBooleanWith(other) == -1;
+        case Value::NODE:
+            return CompareNodeWith(other) == -1;
+        case Value::EDGE:
+            return CompareEdgeWith(other)== -1;
+        case Value::PATH:
+            return ComparePathWith(other) == -1;
+        case Value::LIST:
+            return CompareListWith(other) == -1;
+        case Value::MAP:
+            return CompareMapWith(other) == -1;
+        case Value::NO_VALUE:
+            return CompareNoValueWith(other) == -1;
+    }
+    return false;   //make g++ happy
+}
+/**
+ * @brief Compare a value with another value.[used for order by]
+ * @param other any value
+ * @return if this > other, return 1; if this < other, return -1; if this == other, return 0
+ * */
+int GPStore::Value::comp(const Value & other) const{
+    switch (type_)
+    {
+        case Value::INTEGER:
             return CompareIntWith(other);
         case Value::FLOAT:
             return CompareFloatWith(other);
@@ -253,7 +290,7 @@ bool GPStore::Value::operator<(const Value& other) const{
         case Value::NO_VALUE:
             return CompareNoValueWith(other);
     }
-    return false;   //make g++ happy
+    return 1;
 }
 
 GPStore::Value& GPStore::Value::operator=(const Value&other){
@@ -359,7 +396,7 @@ GPStore::Value * GPStore::Value::ValueDeepCopy(const Value *value){
             new_elem = new GPStore::Value(Value::EDGE, value->data_.Edge);
             break;
         case GPStore::Value::PATH:
-            new_elem = new GPStore::Value(value->data_.Path->node_id_, value->data_.Path->edge_id_, value->data_.Path->edge_type_);
+            new_elem = new GPStore::Value(value->data_.Path->node_id_, value->data_.Path->edge_id_);
             break;
         case GPStore::Value::LIST:
             new_elem = new GPStore::Value(Value::LIST);
@@ -414,9 +451,7 @@ void GPStore::Value::ConstructFrom(const GPStore::Value& other){
             for(auto edge : other.data_.Path->edge_id_){
                 data_.Path->edge_id_.push_back(edge);
             }
-            for(auto ty : other.data_.Path->edge_type_){
-                data_.Path->edge_type_.push_back(ty);
-            }
+
             break;
         case GPStore::Value::LIST:
             data_.List = new vector<Value *>();
@@ -436,113 +471,144 @@ void GPStore::Value::ConstructFrom(const GPStore::Value& other){
     return;
 }
 
-bool GPStore::Value::CompareIntWith(const GPStore::Value &other) const{
+int GPStore::Value::CompareIntWith(const GPStore::Value &other) const{
     Type ty = other.getType();
     if(ty == INTEGER ){
-        return data_.Int < other.data_.Int;
+        if(data_.Int < other.data_.Int)
+                return -1;
+        else if(data_.Int == other.data_.Int)
+                return 0;
+        return 1;
     } else if( ty == FLOAT) {
         if(isinf(other.data_.Float) == 1 || isnan(other.data_.Float))
-            return true;
+            return -1;
         if(isinf(other.data_.Float) == -1)
-            return false;
-        return (double)data_.Int < other.data_.Float;
+            return 1;
+
+        if( (double)data_.Int < other.data_.Float){
+            return -1;
+        } else if((double)data_.Int == other.data_.Float){
+            return 0;
+        }
+        return 1;
+
     } else if(ty == NO_VALUE){
-        return true;
+        return -1;
     } else {
-        return false;
+        return 1;
     }
 }
 
-bool GPStore::Value::CompareFloatWith(const Value &other) const{
+int GPStore::Value::CompareFloatWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == INTEGER ){
         if(isinf(data_.Float) == 1 || isnan(data_.Float))
-            return false;
+            return 1;
         if(isinf(data_.Float) == -1)
-            return true;
-        return data_.Float < (double)other.data_.Int;
+            return -1;
+        if( data_.Float < (double)other.data_.Int)
+            return -1;
+        else if( data_.Float == (double)other.data_.Int)
+            return 0;
+        return 1;
     } else if( ty == FLOAT) {
         if(isnan(other.data_.Float)){
-            return !isnan(data_.Float);
+            return isnan(data_.Float) ? 0 : -1;
         }
-        if(isinf(other.data_.Float) == 1)
-            return !(isinf(data_.Float) == 1 || isnan(data_.Float));
-        if(isinf(other.data_.Float) == -1)
-            return false;
-        if(isnan(data_.Float) || isinf(data_.Float) == 1) return false;
-        if(isinf(data_.Float) == -1)return true;
-        return data_.Float < other.data_.Float;
+        if(isinf(other.data_.Float) == 1){
+            if(isnan(data_.Float)) return  1;
+            else if(isinf(data_.Float) == 1) return 0;
+            return -1;
+        }
+        if(isinf(other.data_.Float) == -1) {
+            return isinf(data_.Float) == -1 ? 0 : 1;
+        }
+        if(isnan(data_.Float) || isinf(data_.Float) == 1) return 1;
+        if(isinf(data_.Float) == -1)return -1;
+        if(data_.Float < other.data_.Float)
+            return -1;
+        else if(data_.Float == other.data_.Float)
+            return 0;
+        else return 1;
     } else if(ty == NO_VALUE){
-        return true;
+        return -1;
     } else {
-        return false;
+        return 1;
     }
 }
 
-bool GPStore::Value::CompareStringWith(const Value &other) const{
+int GPStore::Value::CompareStringWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == STRING){
-        return *data_.String < *other.data_.String;
+        if(*data_.String  == *other.data_.String)
+            return 0;
+        return *data_.String < *other.data_.String ? -1 : 1;
     } else if (ty == FLOAT || ty == INTEGER || ty == NO_VALUE || ty == BOOLEAN){
-        return true;
+        return -1;
     } else {
-        return false;
+        return 1;
     }
 }
 
-bool GPStore::Value::CompareBooleanWith(const Value &other) const{
+int GPStore::Value::CompareBooleanWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == INTEGER || ty == FLOAT || ty == NO_VALUE) {
-        return true;
+        return -1;
     } else if(ty != BOOLEAN){
-        return false;
+        return 1;
     } else {
-        return data_.Boolean ? false : other.data_.Boolean;
+        return data_.Boolean ? (other.data_.Boolean ? 0 : 1)
+        : (other.data_.Boolean ? -1 : 0);
     }
 }
 
-bool GPStore::Value::CompareNodeWith(const Value &other) const{
+int GPStore::Value::CompareNodeWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == MAP){
-        return false;
+        return 1;
     } else if(ty == NODE){
-        return data_.Node < other.data_.Node;
+        return data_.Node < other.data_.Node ? -1 : (data_.Node == other.data_.Node ? 0 : 1);
     } else {
-        return true;
+        return -1;
     }
 }
 
-bool GPStore::Value::CompareEdgeWith(const Value &other) const{
+int GPStore::Value::CompareEdgeWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == MAP || ty == NODE){
-        return false;
+        return 1;
     } else if(ty == EDGE){
-        return data_.Edge < other.data_.Edge;
+        return data_.Edge < other.data_.Edge ? -1 : ( data_.Edge == other.data_.Edge ? 0 : 1);
     } else {
-        return true;
+        return -1;
     }
 }
 
-bool GPStore::Value::ComparePathWith(const Value &other) const{
+int GPStore::Value::ComparePathWith(const Value &other) const{
+    Type ty = other.getType();
+    if(ty == MAP || ty == LIST)
+        return 1;
+    else if(ty != PATH)
+        return -1;
     int m = data_.Path->edge_id_.size(), n = other.data_.Path->edge_id_.size();
     int l = m < n ? m : n;
     for(int i = 0; i < l; ++i){
         if(data_.Path->node_id_[i] != other.data_.Path->node_id_[i]) 
-        return data_.Path->node_id_[i] < other.data_.Path->node_id_[i];
-        if(data_.Path->edge_id_[i] != other.data_.Path->edge_id_[i]) continue;
-        return data_.Path->edge_id_[i] < other.data_.Path->edge_id_[i];
+            return data_.Path->node_id_[i] < other.data_.Path->node_id_[i] ? -1 : 1;
+        if(data_.Path->edge_id_[i] != other.data_.Path->edge_id_[i])
+            return data_.Path->edge_id_[i] < other.data_.Path->edge_id_[i] ? -1 : 1;
     }
     if(data_.Path->node_id_[l] != other.data_.Path->node_id_[l])
-        return data_.Path->node_id_[l] < other.data_.Path->node_id_[l];
-    return m < n;
+        return data_.Path->node_id_[l] < other.data_.Path->node_id_[l] ? -1 : 1;
+    return m == n ? 0 : (m < n ? -1 : 1);
 }
 
-bool GPStore::Value::CompareListWith(const Value &other) const{
+int GPStore::Value::CompareListWith(const Value &other) const{
     Type ty = other.getType();
     if(ty == MAP || ty == NODE || ty == EDGE){
-        return false;
+        return 1;
     } else if(ty != LIST){
-        return true;
+        return -1;
     }
     // ty is LIST
     uint_64 m = data_.List->size(), n = other.data_.List->size();
@@ -551,21 +617,41 @@ bool GPStore::Value::CompareListWith(const Value &other) const{
         if(*data_.List->at(i) == *other.data_.List->at(i)){
             continue;
         }
-        return *data_.List->at(i) < *other.data_.List->at(i);
+        return *data_.List->at(i) < *other.data_.List->at(i) ?  -1 : 1;
     }
-    return m < n;
+    return m == n ? 0 : (m > n ? 1 : -1);
 }
 
-bool GPStore::Value::CompareMapWith(const Value &other) const{
+int GPStore::Value::CompareMapWith(const Value &other) const{
     Type ty = other.getType();
-    if(ty != MAP)
-        return true;
-    // Not define yet
+    if(ty != MAP) return -1;
+    // Give my def of map order
+    if(data_.Map->size() != other.data_.Map->size()){
+        return data_.Map->size() < other.data_.Map->size() ?  -1 : 1;
+    }
+    std::vector<std::string> this_keys, other_keys;
+    for(const auto & p : *(this->data_.Map)){
+        this_keys.emplace_back(p.first);
+    }
+    for(const auto & p : *(other.data_.Map)){
+        other_keys.emplace_back(p.first);
+    }
+    std::sort(this_keys.begin(), this_keys.end());
+    std::sort(other_keys.begin(), other_keys.end());
+    int n = (int)this_keys.size();
+    for(int i = 0; i < n; ++i){
+        if(this_keys[i] != other_keys[i])
+            return this_keys[i] < other_keys[i] ? -1 : 1;
+    }
+    for(int i = 0; i < n; ++i){
+        int comp_v = data_.Map->at(this_keys[i])->comp(data_.Map->at(other_keys[i])) ;
+        if(comp_v != 0) return comp_v;
+    }
     return false;
 }
 
-bool GPStore::Value::CompareNoValueWith(const Value &other) const{
-    return false;
+int GPStore::Value::CompareNoValueWith(const Value &other) const{
+    return other.getType() == NO_VALUE ? 0 : 1;
 }
 
 
