@@ -26,7 +26,7 @@ set(SOURCES
 	PQuery/PQueryTree.cpp
     PQuery/PTempResult.cpp
 	test.cpp
-)
+		PQuery/PTempResult.h Value/PCalculator.h Value/PCalculator.cpp)
 # Add an executable with the above sources
 add_executable(${PROJECT_NAME} ${SOURCES})
 
