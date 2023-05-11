@@ -25,6 +25,7 @@ class PVarset
 
         PVarset(){};
         PVarset(const T &_var){  this->addVar(_var);}
+        PVarset(const PVarset<T> & that){ this->vars = that.vars;}
         PVarset(const std::vector<T> &_vars)
         {
             for (int i = 0; i < (int)_vars.size(); i++)

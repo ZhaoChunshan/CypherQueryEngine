@@ -4,6 +4,16 @@
 #include "../Value/Value.h"
 #include "../PParser/CypherAST.h"
 
+class Order;
+class PQueryInfo{
+    bool limit_;
+    int limit_num_;
+    bool is_distinct_;
+    std::vector<Order> order_by_exp1;  // for SPARQL
+    std::vector<const GPStore::Expression *> order_by_exp2; // for Cypher
+    std::shared_ptr<std::unordered_map<std::string, GPStore::Value>> param_;    //Cypher param
+};
+
 class PQueryTree{
 public:
     enum Mode {SPARQL, Cypher};
