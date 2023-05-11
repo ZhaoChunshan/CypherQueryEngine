@@ -84,7 +84,7 @@ class AtomPropertyLabels{
 public:
     std::vector<std::string> key_names_;
     std::vector<std::string> node_labels_;
-    unsigned prop_id_;  //keynames[0]
+    unsigned prop_id_;  //id of keynames[0]; if invalid, UINT_MAX
     AtomPropertyLabels();
     AtomPropertyLabels(const AtomPropertyLabels &that);
     AtomPropertyLabels& operator=(const AtomPropertyLabels &that);

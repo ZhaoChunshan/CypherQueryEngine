@@ -1,9 +1,8 @@
-// g++ -o test test.cpp Value.cpp Expression.cpp ../PQuery/Varset.cpp -I ./ -I ../PQuery -std=c++11
-// ./test
 #include "Value.h"
 #include "Expression.h"
 #include "PCypherParser.h"
 #include "PQueryTree.h"
+#include "PTempResult.h"
 #include <fstream>
 #include <memory>
 #include <algorithm>
@@ -39,7 +38,7 @@ int test2(){
     GPStore::Value s(string("hello"));
     lst2.append(i);
     vector<GPStore::Value *> values = { &i, &f,&s, &nll, &lst, &lst2};
-    sort(values.begin(), values.end(), [](GPStore::Value *a, GPStore::Value *b){return *a < *b;});
+    sort(values.begin(), values.end(), [](GPStore::Value *a, GPStore::Value *b){return a->comp(*b) == -1;});
     // order: lst2 lst s, f, i, null
     vector<GPStore::Value *> order = { &lst2,  &lst,  &s,  &f,  &i, &nll};
     for(int i = 0; i < 6; ++i){
@@ -80,21 +79,20 @@ int test4(){
 
 /* 测试五：路径 */
 int test5(){
-    vector<GPStore::uint_64> nodes  = {1, 3, 5};
+    vector<unsigned > nodes  = {1, 3, 5};
     vector<GPStore::uint_64> edges = {2, 4};
-    vector<GPStore::Value::EdgeType> tys = {GPStore::Value::LEFT_EDGE, GPStore::Value::RIGHT_EDGE};
-    GPStore::Value p1(nodes, edges, tys);
 
-    GPStore::Value p2 = GPStore::Value(nodes,  edges, tys);
+    GPStore::Value p1(nodes, edges);
+
+    GPStore::Value p2 = GPStore::Value(nodes,  edges);
     p1 = p2;
     if(!(p1 ==  p2))return 1;
-    vector<GPStore::uint_64> nodes2  = {5, 3, 1};
+    vector<unsigned > nodes2  = {5, 3, 1};
     vector<GPStore::uint_64> edges2 = {4, 2};
-    vector<GPStore::Value::EdgeType> tys2 = { GPStore::Value::RIGHT_EDGE, GPStore::Value::LEFT_EDGE};
 
-    auto p3=  GPStore::Value(edges2, nodes2, tys2);
-    p2 = p3;
-    if((p1 ==  p2))return 2;
+    auto p3=  GPStore::Value(nodes2, edges2);
+
+    if((p3 ==  p2))return 2;
     return 0;
 }
 
@@ -136,6 +134,7 @@ int test7(){
 
 /* 测试八：逻辑执行树 */
 int test8(){
+    cout << endl;
     const char *s[]= {
             "interactive-complex-1.cypher",
             "interactive-complex-2.cypher",
@@ -178,10 +177,42 @@ int test8(){
     return 0;
 }
 
+/* 测试九：PTempResult */
+int test9(){
+    vector<unsigned > n1 = {22, 1, 8, 40, 33};
+    vector<unsigned > n2 = {3, 5, 1, 2, 4};
+    vector<unsigned long long> e = {100, 88, 99, 111, 222};
+    vector<GPStore::Value> v = { GPStore::Value(1.0), GPStore::Value("Hello"),
+                                    GPStore::Value("Alice"), GPStore::Value(GPStore::Value::INTEGER),
+                                    GPStore::Value(GPStore::Value::NO_VALUE) };
+    v[3].data_.Int = -1;
+
+    vector<unsigned > node_var = {1, 2};
+    vector<unsigned > edge_var = {3};
+    vector<unsigned > value_var = {5};
+    PTempResult res;
+    res.head_.setColumnVarName(node_var, edge_var, value_var);
+    for(int i = 0; i < 5; ++i){
+        res.rows_.emplace_back();
+        res.rows_.back().spo_id_.push_back(n1[i]);
+        res.rows_.back().spo_id_.push_back(n2[i]);
+        res.rows_.back().edge_id_.push_back(e[i]);
+        res.rows_.back().values_.emplace_back(v[i]);
+    }
+    cout << "\n ========Print PTempResult========\n";
+    res.print();
+    cout << "\n ========Sort PTempResult========\n";
+    vector<unsigned >cols ={ 0, 1, 2};
+    res.sort(0, 4, cols);
+    cout << "\n ========Print PTempResult========\n";
+    res.print();
+    return 0;
+}
 
 int main(){
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8};
-    for(int i = 0; i < 8; ++i){
+
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9};
+    for(int i = 0; i < 9; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {

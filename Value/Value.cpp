@@ -106,6 +106,9 @@ bool GPStore::Value::isErrorValue() const {
     return type_ == ERROR_VALUE;
 }
 
+bool GPStore::Value::isNumber() const{
+    return type_ == FLOAT || type_ == INTEGER;
+}
 bool GPStore::Value::storable() const{
     return type_ == INTEGER || type_ == FLOAT || type_ == STRING || type_ == BOOLEAN ||
         isIntArray() || isFloatArray() || isBooleanArray() || isStringArray();
@@ -310,6 +313,10 @@ const std::vector<GPStore::Value*>* GPStore::Value::getListContent(){
 void GPStore::Value::append(const GPStore::Value& value){
     data_.List->push_back(ValueDeepCopy(&value));
     return;
+}
+
+void GPStore::Value::append(Value * value){
+    data_.List->push_back(value);
 }
 
 GPStore::Value& GPStore::Value::operator[](uint_64 index){

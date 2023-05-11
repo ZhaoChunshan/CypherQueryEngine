@@ -11,22 +11,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Create a sources variable with a link to all cpp files to compile
 set(SOURCES
-	PParser/Cypher/CypherBaseListener.cpp
-	PParser/Cypher/CypherBaseVisitor.cpp
-	PParser/Cypher/CypherLexer.cpp
-	PParser/Cypher/CypherListener.cpp
-	PParser/Cypher/CypherParser.cpp
-	PParser/Cypher/CypherVisitor.cpp
-    Value/Expression.cpp
-    PParser/Pattern.cpp
-    PParser/CypherAST.cpp
-    PParser/PCypherParser.cpp
-    Value/Value.cpp
-    PQuery/PQueryOperator.cpp
-	PQuery/PQueryTree.cpp
-    PQuery/PTempResult.cpp
-	test.cpp
-		PQuery/PTempResult.h Value/PCalculator.h Value/PCalculator.cpp)
+		PParser/Cypher/CypherBaseListener.cpp
+		PParser/Cypher/CypherBaseVisitor.cpp
+		PParser/Cypher/CypherLexer.cpp
+		PParser/Cypher/CypherListener.cpp
+		PParser/Cypher/CypherParser.cpp
+		PParser/Cypher/CypherVisitor.cpp
+		Value/Expression.cpp
+		Value/PCalculator.cpp
+		PParser/Pattern.cpp
+		PParser/CypherAST.cpp
+		PParser/PCypherParser.cpp
+		Value/Value.cpp
+		PQuery/PQueryOperator.cpp
+		PQuery/PQueryTree.cpp
+		PQuery/PTempResult.cpp
+		test.cpp
+
+        PQuery/PQueryExecutor.h)
 # Add an executable with the above sources
 add_executable(${PROJECT_NAME} ${SOURCES})
 

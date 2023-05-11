@@ -68,7 +68,6 @@ public:
 
     /* Construct List */
     Value(const std::vector<Value *> &list_, bool deep_copy = true);
-
     /* Construct Map */
     Value(const std::vector<std::string> &keys, const std::vector<Value *> &values, bool deep_copy = true);
 
@@ -76,6 +75,7 @@ public:
 
     bool isNull() const;
     bool isErrorValue() const;
+    bool isNumber() const;
     bool storable() const;
 
     bool isIntArray() const;
@@ -94,12 +94,12 @@ public:
     int comp(const Value & other) const;    // return -1 if less than, 1 if greater, 0 if equal
     Value& operator=(const Value&other);
 
-    /* get a read-only pointer the the content of a list value */
+    /* get a read-only pointer the content of a list value */
     const std::vector<GPStore::Value*>* getListContent();
 
     /* append an element to a list */
-    void append(const Value& value);
-
+    void append(const Value& value);    // deep copy
+    void append(Value * value);         // shallow copy
     /* get a list element by index(must be valid) */
     Value &operator[](uint_64 index);
     
