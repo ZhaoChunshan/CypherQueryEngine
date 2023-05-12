@@ -436,7 +436,7 @@ PQueryOperator::propertyEqualityToExpression(unsigned var_id, const std::string 
     exp->children_.back()->atom_ = dynamic_cast<GPStore::Atom*>(var);
     exp->children_.back()->property_label_ = new GPStore::AtomPropertyLabels();
     exp->children_.back()->property_label_->addKeyName(prop_name);
-    exp->children_.back()->property_label_->prop_id_ = prop_id;
+    exp->children_.back()->property_label_->prop_ids_.push_back(prop_id);
     exp->children_.back()->covered_props_.addVar(std::make_pair(var_id, prop_id));
     exp->children_.back()->covered_var_id_.addVar(var_id);
     exp->children_.push_back(new GPStore::Expression(prop_val));

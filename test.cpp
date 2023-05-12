@@ -3,6 +3,7 @@
 #include "PCypherParser.h"
 #include "PQueryTree.h"
 #include "PTempResult.h"
+#include "PCalculator.h"
 #include <fstream>
 #include <memory>
 #include <algorithm>
@@ -177,7 +178,7 @@ int test8(){
     return 0;
 }
 
-/* 测试九：PTempResult */
+/* 测试九：PTempResult Sort */
 int test9(){
     vector<unsigned > n1 = {22, 1, 8, 40, 33};
     vector<unsigned > n2 = {3, 5, 1, 2, 4};
@@ -209,10 +210,31 @@ int test9(){
     return 0;
 }
 
+/* 测试十：计算器 */
+int test10(){
+    PCypherParser parser;
+    std::string q1("RETURN \"abc\" starts with \"a\" ");
+    std::string q2(" RETURN [1, null, \"happy\", {age:10}][2..4][1][\"age\"]");
+    std::unique_ptr<CypherAST> ast(parser.CypherParse(q1));
+    auto & with_ret = ast->single_querys_[0]->query_units_[0]->with_return_;
+    auto v1 = PCalculator::evaluateConstExpression(with_ret->proj_exp_[0].get());
+    ast.reset(parser.CypherParse(q2));
+    auto v2 = PCalculator::evaluateConstExpression(
+            ast->single_querys_[0]->query_units_[0]->with_return_->proj_exp_[0].get()
+            );
+    if(v1.type_ == GPStore::Value::BOOLEAN && v1.data_.Boolean){
+        if(v2.type_ == GPStore::Value::INTEGER && v2.data_.Int == 10){
+            return 0;
+        }
+        return 2;
+    }
+    return 1;
+}
+
 int main(){
 
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9};
-    for(int i = 0; i < 9; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10};
+    for(int i = 0; i < 10; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {

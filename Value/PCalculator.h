@@ -39,6 +39,8 @@ public:
             );
 
 
+    static GPStore::Value
+    evaluateConstExpression(const GPStore::Expression *exp);
 
     static GPStore::Value
     evaluateBinaryLogicalExpression(
@@ -263,7 +265,7 @@ public:
     );
 
     static GPStore::Value
-    evaluatePropertyKeynames(const GPStore::Value x, const std::vector<std::string> & keynames, const PStore * pStore);
+    evaluatePropertyOrMapKey(const GPStore::Value & x, const std::vector<std::string> & keynames, const PStore * pStore);
 
     static GPStore::Value
     logicalAnd(const GPStore::Value & x, const GPStore::Value & y);

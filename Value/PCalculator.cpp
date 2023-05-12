@@ -78,6 +78,21 @@ PCalculator::evaluateExpression(
     return GPStore::Value(GPStore::Value::ERROR_VALUE);
 }
 
+/**
+ * @brief evaluate a const expression.No Variable, No Node Edge, No PropertyLabel, No param
+ * */
+GPStore::Value
+PCalculator::evaluateConstExpression(const GPStore::Expression *exp){
+    std::vector<unsigned > empty_spo;
+    std::map<unsigned ,unsigned >empty_col;
+    std::vector<unsigned long long > empty_edge;
+    std::vector<GPStore::Value > empty_val;
+    std::map<std::pair<unsigned ,unsigned >,unsigned > empty_var_prop2col;
+    std::unordered_map<std::string, GPStore::Value> empty_param;
+    return evaluateExpression(exp, empty_spo, empty_col, empty_edge, empty_col, empty_val,
+                              empty_col, empty_var_prop2col,empty_param, nullptr);
+}
+
 GPStore::Value
 PCalculator::evaluateBinaryLogicalExpression(
         const GPStore::Expression *exp,
@@ -413,9 +428,12 @@ GPStore::Value PCalculator::evaluateAtomExpression(
     if(exp->property_label_ == nullptr)
         return val;
     if(!exp->property_label_->key_names_.empty()){
-
+        return evaluatePropertyOrMapKey(val, exp->property_label_->key_names_, pStore);
     } else if(!exp->property_label_->node_labels_.empty()){
         // a:Person:Student
+        // TODO:we should check the existence of those labels.
+        // call KVStore here
+        return std::rand()% 2 == 0 ? true : false;
     } else {
         return val;
     }
@@ -733,16 +751,43 @@ PCalculator::evaluateCaseExpression(
 
 }
 
+
+
+/**
+ * @brief resolve a (node/edge, property key) pair to a property value; Or a (map, mapkey) pair to a mapped value.
+ * @param x GPStore::Value, of type Node, Edge, or Map.
+ * @param keynames property name list(e.g. m.message.id)
+ * @param pStore
+ * */
 GPStore::Value
-PCalculator::evaluatePropertyKeynames(const GPStore::Value x, const std::vector<std::string> & keynames,
+PCalculator::evaluatePropertyOrMapKey(const GPStore::Value & x, const std::vector<std::string> & keynames,
                                       const PStore * pStore){
-    if(x.type_ == GPStore::Value::MAP){
-        if(keynames.size() == 1){
-            return 0.0;
+    /// TODO: Call Storage Engine to implement this function.
+    const GPStore::Value * val = &x;
+    std::unique_ptr<GPStore::Value> v;  // for dynamic alloc
+    for(const auto & k : keynames){
+        if(val->type_ == GPStore::Value::MAP){
+            auto it = val->data_.Map->find(k);
+            if(it == val->data_.Map->end()) return GPStore::Value::NO_VALUE;
+            val = it->second;
+        } else {
+            unsigned key_id = (unsigned ) rand()% 10000; // todo: Call pStore here.
+            if(key_id == 0xffffffffU) return GPStore::Value::NO_VALUE;
+            if(val->type_ == GPStore::Value::NODE){
+                unsigned  nid = val->data_.Node;
+                v.reset(new GPStore::Value);    // todo:Call pStore here.
+                val = v.get();
+            } else if(val->type_ == GPStore::Value::EDGE){
+                unsigned  eid = val->data_.Edge;
+                v.reset(new GPStore::Value);    // todo:Call pStore here.
+                val = v.get();
+            } else {
+                return  GPStore::Value::ERROR_VALUE;
+            }
         }
     }
-    /// TODO: implement this function
-    return GPStore::Value::NO_VALUE;
+
+    return *val;
 }
 
 

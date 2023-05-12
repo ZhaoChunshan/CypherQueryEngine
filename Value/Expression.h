@@ -14,7 +14,7 @@ namespace GPStore{
 #include "../PParser/Pattern.h"
 
 namespace GPStore{
-    
+
 class Expression;
 class AtomPropertyLabels;
 class Atom;
@@ -26,14 +26,14 @@ class Atom;
  * 逻辑运算符OR XOR AND 组织成多叉树(e.g. 多个孩子用AND连起来)
  * 其他的运算符组织成二叉树(i.e. children.size() == 2)
 */
-class Expression{
+class Expression {
 public:
-	enum OperatorType{
+    enum OperatorType {
         OR,
-        XOR, 
-        AND, 
-        NOT, 
-        EQUAL, NOT_EQUAL, LESS, GREATER, LESS_EQUAL, GREATER_EQUAL, 
+        XOR,
+        AND,
+        NOT,
+        EQUAL, NOT_EQUAL, LESS, GREATER, LESS_EQUAL, GREATER_EQUAL,
         IN,
         STARTS_WITH, ENDS_WITH, CONTAINS,
         IS_NULL, IS_NOT_NULL,
@@ -47,44 +47,60 @@ public:
     };
 
     OperatorType oprt_;
-	std::vector<Expression *> children_;	// children.size()==0 implies it's leaf node(i.e. atom)
-	Atom* atom_;
-    AtomPropertyLabels* property_label_;
+    std::vector<Expression *> children_;    // children.size()==0 implies it's leaf node(i.e. atom)
+    Atom *atom_;
+    AtomPropertyLabels *property_label_;
 
     // 变量覆盖集合
     PVarset<unsigned> covered_var_id_;
     // 属性覆盖集合 a.age
+    // 这是建议覆盖集合，非真正属性覆盖。比如，a可能是map类型而非Node/Edge。
     PVarset<std::pair<unsigned, unsigned>> covered_props_;
 
     Expression();
-    Expression(const Expression& that);
-    Expression& operator=(const Expression& that);
+
+    Expression(const Expression &that);
+
+    Expression &operator=(const Expression &that);
+
     ~Expression();
+
     void release();
-    
+
     bool isAtom() const;
+
     bool isVariable() const;
+
     bool containsAggrFunc() const;
+
     /* if this is variable, return its name */
     std::string getVariableName() const;
+
     unsigned getVariableId() const;
+
     void print(int dep) const;
 
-    
-    /*  helper functions */ 
+
+    /*  helper functions */
     static void printHead(int dep, const char *name, bool colon = true, bool endline = true);
-    static Atom * AtomDeepCopy(Atom *atom);
+
+    static Atom *AtomDeepCopy(Atom *atom);
+
     static std::string oprt2String(OperatorType op);
-    
-    static std::vector<Expression*> split(Expression *exp, OperatorType oprt);
+
+    static std::vector<Expression *> split(Expression *exp, OperatorType oprt);
+
+    static Expression *VarPropertyToExpression(unsigned varid, unsigned propid, const GPStore::Expression *expr);
+
+    static Expression *JoinExpressionBy(std::vector<const Expression *> exprs, OperatorType oprt = AND);
 };
 
 // 属性标签表达式，用于 p.props.age; a:Person 这类表达式
 class AtomPropertyLabels{
 public:
-    std::vector<std::string> key_names_;
-    std::vector<std::string> node_labels_;
-    unsigned prop_id_;  //id of keynames[0]; if invalid, UINT_MAX
+    std::vector<std::string> key_names_;    // necessary
+    std::vector<std::string> node_labels_;  // necessary
+    std::vector<unsigned> prop_ids_;  //id of keynames[0]; if invalid, UINT_MAX
     AtomPropertyLabels();
     AtomPropertyLabels(const AtomPropertyLabels &that);
     AtomPropertyLabels& operator=(const AtomPropertyLabels &that);
@@ -162,7 +178,7 @@ public:
 /* only for aggregate func count(*) */
 class Count : public Atom{
 public:
-    
+
     Count();
     Count(const Count& that);
     ~Count();

@@ -10,8 +10,6 @@
 
 using NodeType = unsigned ;
 using EdgeIdType = unsigned long long;
-#define SPO_INVALID 0xffffffffU
-#define EDGE_INVALID 0xffffffffffffffffULL
 
 class PTempResult {
 public:

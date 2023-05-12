@@ -1170,6 +1170,8 @@ antlrcpp::Any PCypherParser::visitOC_PropertyOrLabelsExpression(CypherParser::OC
     
         for(auto prop_look_up : ctx->oC_PropertyLookup()){
             exp->property_label_->addKeyName(prop_look_up->oC_PropertyKeyName()->getText());
+            unsigned kid = sym_tb_.getPropId(exp->property_label_->key_names_.back());
+            exp->property_label_->prop_ids_.push_back(kid);
         }    
         if(ctx->oC_NodeLabels() != nullptr){
             for(auto label : ctx->oC_NodeLabels()->oC_NodeLabel()){
@@ -1178,10 +1180,9 @@ antlrcpp::Any PCypherParser::visitOC_PropertyOrLabelsExpression(CypherParser::OC
         }
         if(atom->atom_type_ == GPStore::Atom::VARIABLE && exp->property_label_->key_names_.size()){
             // TODO: covered propery.
-            unsigned prop_id = sym_tb_.getPropId(exp->property_label_->key_names_[0]);
-            exp->property_label_->prop_id_ = prop_id;
+
             exp->covered_props_.addVar(std::make_pair(
-                dynamic_cast<GPStore::Variable*>(atom)->id_, prop_id));
+                dynamic_cast<GPStore::Variable*>(atom)->id_, exp->property_label_->prop_ids_[0]));
         }
         return exp;
     } else if(atom->atom_type_ == GPStore::Atom::PARENTHESIZED_EXPRESSION){

@@ -110,6 +110,49 @@ GPStore::Expression::split(GPStore::Expression *exp, OperatorType oprt){
     return split_exps;
 }
 
+
+GPStore:: Expression*
+GPStore::Expression::VarPropertyToExpression(unsigned varid, unsigned propid, const GPStore::Expression* expr){
+    Expression *left = new GPStore::Expression;
+    left->oprt_ = GPStore::Expression::EMPTY_OP;
+    Variable * var = new Variable;
+    var->id_ = varid;
+    var->covered_var_id_.addVar(varid);
+    left->atom_ = var;
+    left->property_label_ = new GPStore::AtomPropertyLabels;
+    left->property_label_->key_names_.emplace_back("@anno_key");
+    left->property_label_->prop_ids_.push_back(propid);
+
+    left->covered_var_id_.addVar(varid);
+    left->covered_props_.addVar(std::make_pair(varid, propid));
+
+    Expression *right = new GPStore::Expression(*expr);
+    Expression *res = new GPStore::Expression;
+    res->oprt_ = GPStore::Expression::EQUAL;
+    res->children_.push_back(left);
+    res->children_.push_back(right);
+    res->covered_var_id_ = left->covered_var_id_ + right->covered_var_id_;
+    res->covered_props_ = left->covered_props_ + right->covered_props_;
+
+    return res;
+}
+
+/**
+ * @brief Join some Expressions use oprt, oprt must be one of AND, OR, XOR
+ *
+ * */
+GPStore::Expression*
+GPStore::Expression::JoinExpressionBy(std::vector<const Expression* > exprs,OperatorType oprt){
+    Expression *res = new Expression;
+    res->oprt_ = oprt;
+    for(auto e : exprs){
+        res->children_.push_back(new Expression(*e));
+        res->covered_var_id_ += e->covered_var_id_;
+        res->covered_props_ += e->covered_props_;
+    }
+    return res;
+}
+
 /* class: Expression */
 
 
@@ -269,7 +312,7 @@ GPStore::AtomPropertyLabels::AtomPropertyLabels(){
 GPStore::AtomPropertyLabels::AtomPropertyLabels(const AtomPropertyLabels &that){
     key_names_ = that.key_names_;
     node_labels_ = that.node_labels_;
-    prop_id_ = that.prop_id_;
+    prop_ids_ = that.prop_ids_;
 }
 
 GPStore::AtomPropertyLabels& 
@@ -277,7 +320,7 @@ GPStore::AtomPropertyLabels:: operator=(const GPStore::AtomPropertyLabels &that)
     if(this == &that) return *this;
     key_names_ = that.key_names_;
     node_labels_ = that.node_labels_;
-    prop_id_ = that.prop_id_;
+    prop_ids_ = that.prop_ids_;
     return *this;
 }
 
