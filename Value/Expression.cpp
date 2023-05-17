@@ -228,6 +228,11 @@ bool GPStore::Expression::isVariable() const{
     return oprt_ == EMPTY_OP && atom_ != nullptr && atom_->atom_type_ == Atom::VARIABLE && property_label_ == nullptr;
 }
 
+bool GPStore::Expression::isVariableProp() const{
+    return oprt_ == EMPTY_OP && atom_ != nullptr && atom_->atom_type_ == Atom::VARIABLE && property_label_ != nullptr
+        && property_label_->prop_ids_.size() == 1;
+}
+
 bool GPStore::Expression::containsAggrFunc() const{
     if(oprt_ != EMPTY_OP){
         for(auto child : children_){

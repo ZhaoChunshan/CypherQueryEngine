@@ -1,6 +1,6 @@
 MATCH (p:Product)
 WHERE p.name = "p-5"
 OPTIONAL MATCH (p)<-[:OFFERS]-(s)
-WITH p, count(s) AS supplyerNum
+WITH p, count(s) AS supplierNum
 OPTIONAL MATCH (p)<-[:ORDERED]-(u)
-RETURN p.name, supplyerNum, count(u) AS buyerNum
+RETURN p.name, supplierNum, count(u) AS buyerNum

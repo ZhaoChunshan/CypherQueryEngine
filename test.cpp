@@ -231,10 +231,26 @@ int test10(){
     return 1;
 }
 
+int test11(){
+    PCypherParser parser;
+    std::ifstream fin(QueryPath + string("example_2.cypher"));
+        std::unique_ptr<CypherAST> ast;
+        try{
+            ast.reset( parser.CypherParse(fin));
+            PQueryTree qt;
+            qt.GenerateQueryTree(ast.get());
+        } catch (const runtime_error& e){
+            cout << e.what() << endl;
+        }
+        fin.close();
+    return 0;
+}
+
 int main(){
 
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10};
-    for(int i = 0; i < 10; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9,
+                     test10, test11};
+    for(int i = 0; i < 11; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {

@@ -71,6 +71,8 @@ public:
 
     bool isVariable() const;
 
+    bool isVariableProp() const ;
+
     bool containsAggrFunc() const;
 
     /* if this is variable, return its name */
