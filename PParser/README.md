@@ -4,3 +4,13 @@
 + PatternComprehension 
 + Quantifier
 + ExistentialSubquery
+
+## Usage
+'''cpp
+PCypherParser parser;
+std::unique_ptr<CypherAST> ast;
+for(query : queries){
+    ast.reset(parser.CypherParse(query, pstore));
+    // do something
+}
+'''
