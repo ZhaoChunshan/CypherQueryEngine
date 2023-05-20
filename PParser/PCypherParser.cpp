@@ -1625,6 +1625,14 @@ antlrcpp::Any PCypherParser::visitOC_PatternPredicate(CypherParser::OC_PatternPr
     if(new_var){
         throw std::runtime_error("[ERROR] PatternExpressions are not allowed to introduce new variables.");
     }
+    PVarset<unsigned > covered;
+    for(auto & node : pattern_pdc->pattern_->nodes_){
+        if(!node->is_anno_var_) covered.addVar(node->var_id_);
+    }
+    for(auto & edge : pattern_pdc->pattern_->edges_){
+        if(!edge->is_anno_var_) covered.addVar(edge->var_id_);
+    }
+    pattern_pdc->covered_var_id_ = covered;
     return pattern_pdc.release();
 }
 
