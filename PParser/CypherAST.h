@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <memory>
 #include "Pattern.h"
-
+#include "../Util/util.h"
 
 // CypherAST
 class CypherAST;
@@ -42,9 +42,10 @@ class CypherAST{
 public:
     std::vector<std::unique_ptr<SingleQueryAST>> single_querys_;
     std::vector<bool> union_all_;
-    std::vector<std::string> id2var_name_;
-    std::unordered_map<std::string, unsigned> prop2id_;
-    std::map<unsigned, std::string> prop_id2string_;
+    std::shared_ptr<std::vector<std::string>> id2var_name_;                 // decode: var_id To var_name
+    std::shared_ptr<std::unordered_map<std::string, unsigned>> prop2id_;    // a cache of PStore: prop=>id
+    std::shared_ptr<std::map<unsigned, std::string>> prop_id2string_;       // valid property_id To propertyKeyName
+    // We only encode varId, propId, but don't encode label id. Why? haha.
     CypherAST() = default;
     ~CypherAST() = default;
     void print(int dep) const;
@@ -94,7 +95,7 @@ public:
 class MatchAST: public ReadingAST{
 public:
     bool is_optional_;
-    std::vector<GPStore::RigidPattern> pattern_;
+    std::vector<std::unique_ptr<GPStore::RigidPattern>> pattern_;
     std::unique_ptr<GPStore::Expression> where_;
     
     MatchAST(){ reading_form_ = MATCH; }
@@ -114,17 +115,16 @@ public:
 
 class InQueryCallAST: public ReadingAST{
 public:
-    bool asterisk_;
     // 名字空间依次用'.'分割，如db.labels
     std::vector<std::string> procedure_name_; 
     // 显式的过程调用需要括号内指定参数
     std::vector<std::unique_ptr<GPStore::Expression>> args_;
     // 返回的列
-    std::vector<std::string> yield_items;
+    std::vector<std::string> yield_items_;
     // 与yield_items一一对应，为空则无别名
-    std::vector<std::string> alias; 
+    std::vector<std::string> alias_;
 
-    std::vector<std::string> yield_var_;   // 原名或别名
+    std::vector<std::string> yield_var_;    // 原名或别名
     std::vector<unsigned> yield_var_id_;    // 原名或别名的id
     std::unique_ptr<GPStore::Expression> where_;
     
@@ -140,7 +140,7 @@ public:
 
 class CreateAST: public UpdatingAST{
 public:
-    std::vector<GPStore::RigidPattern> pattern_;
+    std::vector<std::unique_ptr<GPStore::RigidPattern>> pattern_;
     CreateAST() {updating_form_ = CREATE;}
     ~CreateAST()= default;
     void print(int dep) const override;
@@ -148,7 +148,7 @@ public:
 
 class MergeAST: public UpdatingAST{
 public:
-    GPStore::RigidPattern rigid_pattern_;
+    std::unique_ptr<GPStore::RigidPattern> rigid_pattern_;
     std::vector<bool> is_on_match_;
     std::vector<std::unique_ptr<SetAST>> set_actions_;
     MergeAST(){updating_form_ = MERGE;}
@@ -222,12 +222,13 @@ public:
            | ( oC_Variable SP? oC_NodeLabels )
            ;
     */
-    enum SetType{PROPERTY_EXP, NODE_LABEL, VAR_ASSIGN, VAR_ADD};
+    enum SetType{SINGLE_PROPERTY, NODE_LABELS, ASSIGN_PROPERTIES, ADD_PROPERTIES};
     SetType set_type_;
     std::unique_ptr<GPStore::Expression> prop_exp_;
     std::string var_name_;
-    std::unique_ptr<GPStore::Expression> rval_;
-    std::vector<std::string> rlabels_;
+    unsigned  var_id_;
+    std::unique_ptr<GPStore::Expression> exp_;
+    std::vector<std::string> labels_;
     SetItemAST() = default;
     ~SetItemAST() = default;
     void print(int dep) const;
@@ -238,6 +239,7 @@ public:
     // 如果是删除标签，只用到variable_name,label_names
     // 如果是删除属性，只用到ProperyExpression
     std::string var_name_;
+    unsigned var_id_;
     std::vector<std::string> labels_;
     std::unique_ptr<GPStore::Expression> prop_exp_;
     RemoveItemAST()= default;

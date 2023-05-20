@@ -2,8 +2,8 @@
 #include "Expression.h"
 #include "PCypherParser.h"
 #include "PQueryTree.h"
-#include "PTempResult.h"
-#include "PCalculator.h"
+//#include "PTempResult.h"
+//#include "PCalculator.h"
 #include <fstream>
 #include <memory>
 #include <algorithm>
@@ -11,6 +11,48 @@
 using namespace std;
 
 std::string QueryPath = "../Queries/";
+const char *s[]= {
+        "interactive-complex-1.cypher",
+        "interactive-complex-2.cypher",
+        "interactive-complex-3.cypher",
+        "interactive-complex-4.cypher",
+        "interactive-complex-5.cypher",
+        "interactive-complex-6.cypher",
+        "interactive-complex-7.cypher",
+        "interactive-complex-8.cypher",
+        "interactive-complex-9.cypher",
+        "interactive-complex-10.cypher",
+        "interactive-complex-11.cypher",
+        "interactive-complex-12.cypher",
+        "interactive-complex-13.cypher",
+        "interactive-complex-14.cypher",
+        "interactive-short-1.cypher",
+        "interactive-short-2.cypher",
+        "interactive-short-3.cypher",
+        "interactive-short-4.cypher",
+        "interactive-short-5.cypher",
+        "interactive-short-6.cypher",
+        "interactive-short-7.cypher",
+        "interactive-update-1.cypher",
+        "interactive-update-2.cypher",
+        "interactive-update-3.cypher",
+        "interactive-update-4.cypher",
+        "interactive-update-5.cypher",
+        "interactive-update-6.cypher",
+        "interactive-update-7.cypher",
+        "interactive-update-8.cypher",
+        "interactive-delete-1.cypher",
+        "interactive-delete-2.cypher",
+        "interactive-delete-3.cypher",
+        "interactive-delete-4.cypher",
+        "interactive-delete-5.cypher",
+        "interactive-delete-6.cypher",
+        "interactive-delete-7.cypher",
+        "interactive-delete-8.cypher",
+        "test_list_comprehension.cypher"
+
+
+};
 
 /* 测试一：对IntValue * 排序 */
 int test1(){
@@ -120,137 +162,118 @@ int test6(){
 /* 测试七: 抽象语法树 */
 int test7(){
     PCypherParser parser;
-    std::ifstream fin(QueryPath + "interactive-complex-1.cypher");
-    CypherAST *ast = nullptr;
-    try{
-        ast = parser.CypherParse(fin);
-        //ast->print(0);
-        delete ast;
-    } catch (const runtime_error& e){
-        cout << e.what() << endl;
-    }
-    
-    return 0;
-}
-
-/* 测试八：逻辑执行树 */
-int test8(){
-    cout << endl;
-    const char *s[]= {
-            "interactive-complex-1.cypher",
-            "interactive-complex-2.cypher",
-            "interactive-complex-3.cypher",
-            "interactive-complex-4.cypher",
-            "interactive-complex-5.cypher",
-            "interactive-complex-6.cypher",
-            "interactive-complex-7.cypher",
-            "interactive-complex-8.cypher",
-            "interactive-complex-9.cypher",
-            "interactive-complex-10.cypher",
-            "interactive-complex-11.cypher",
-            "interactive-complex-12.cypher",
-            "interactive-complex-13.cypher",
-            "interactive-complex-14.cypher",
-            "interactive-short-1.cypher",
-            "interactive-short-2.cypher",
-            "interactive-short-3.cypher",
-            "interactive-short-4.cypher",
-            "interactive-short-5.cypher",
-            "interactive-short-6.cypher",
-            "interactive-short-7.cypher"
-    };
-    PCypherParser parser;
-    for(int i = 0; i < 21; ++i){
-        std::ifstream fin(QueryPath + string(s[i]));
+    // std::cout << std::endl;
+    for(int i = 0; i < 37; ++i){
         std::unique_ptr<CypherAST> ast;
+        std::ifstream fin(QueryPath + s[i]);
+        // std::cout << "===========Parse AST For " << s[i] << "===========" << std::endl;
+
         try{
-            ast.reset( parser.CypherParse(fin));
-            PQueryTree qt;
-            qt.GenerateQueryTree(ast.get());
-            cout << "Generate QueryTree For: " << s[i] << " Passed." << endl;
+            ast.reset(parser.CypherParse(fin, nullptr));
+            // ast->print(0);
         } catch (const runtime_error& e){
             cout << e.what() << endl;
+            return 1;
         }
-        fin.close();
     }
-
-    
     return 0;
 }
-
-/* 测试九：PTempResult Sort */
-int test9(){
-    vector<unsigned > n1 = {22, 1, 8, 40, 33};
-    vector<unsigned > n2 = {3, 5, 1, 2, 4};
-    vector<unsigned long long> e = {100, 88, 99, 111, 222};
-    vector<GPStore::Value> v = { GPStore::Value(1.0), GPStore::Value("Hello"),
-                                    GPStore::Value("Alice"), GPStore::Value(GPStore::Value::INTEGER),
-                                    GPStore::Value(GPStore::Value::NO_VALUE) };
-    v[3].data_.Int = -1;
-
-    vector<unsigned > node_var = {1, 2};
-    vector<unsigned > edge_var = {3};
-    vector<unsigned > value_var = {5};
-    PTempResult res;
-    res.head_.setColumnVarName(node_var, edge_var, value_var);
-    for(int i = 0; i < 5; ++i){
-        res.rows_.emplace_back();
-        res.rows_.back().spo_id_.push_back(n1[i]);
-        res.rows_.back().spo_id_.push_back(n2[i]);
-        res.rows_.back().edge_id_.push_back(e[i]);
-        res.rows_.back().values_.emplace_back(v[i]);
-    }
-    cout << "\n ========Print PTempResult========\n";
-    res.print();
-    cout << "\n ========Sort PTempResult========\n";
-    vector<unsigned >cols ={ 0, 1, 2};
-    res.sort(0, 4, cols);
-    cout << "\n ========Print PTempResult========\n";
-    res.print();
-    return 0;
-}
-
-/* 测试十：计算器 */
-int test10(){
-    PCypherParser parser;
-    std::string q1("RETURN \"abc\" starts with \"a\" ");
-    std::string q2(" RETURN [1, null, \"happy\", {age:10}][2..4][1][\"age\"]");
-    std::unique_ptr<CypherAST> ast(parser.CypherParse(q1));
-    auto & with_ret = ast->single_querys_[0]->query_units_[0]->with_return_;
-    auto v1 = PCalculator::evaluateConstExpression(with_ret->proj_exp_[0].get());
-    ast.reset(parser.CypherParse(q2));
-    auto v2 = PCalculator::evaluateConstExpression(
-            ast->single_querys_[0]->query_units_[0]->with_return_->proj_exp_[0].get()
-            );
-    if(v1.type_ == GPStore::Value::BOOLEAN && v1.data_.Boolean){
-        if(v2.type_ == GPStore::Value::INTEGER && v2.data_.Int == 10){
-            return 0;
-        }
-        return 2;
-    }
-    return 1;
-}
-
-int test11(){
-    PCypherParser parser;
-    std::ifstream fin(QueryPath + string("example_2.cypher"));
-        std::unique_ptr<CypherAST> ast;
-        try{
-            ast.reset( parser.CypherParse(fin));
-            PQueryTree qt;
-            qt.GenerateQueryTree(ast.get());
-        } catch (const runtime_error& e){
-            cout << e.what() << endl;
-        }
-        fin.close();
-    return 0;
-}
+//
+///* 测试八：逻辑执行树 */
+//int test8(){
+//    cout << endl;
+//
+//    PCypherParser parser;
+//    for(int i = 0; i < 21; ++i){
+//        std::ifstream fin(QueryPath + string(s[i]));
+//        std::unique_ptr<CypherAST> ast;
+//        try{
+//            ast.reset( parser.CypherParse(fin));
+//            PQueryTree qt;
+//            qt.GenerateQueryTree(ast.get());
+//            cout << "Generate QueryTree For: " << s[i] << " Passed." << endl;
+//        } catch (const runtime_error& e){
+//            cout << e.what() << endl;
+//        }
+//        fin.close();
+//    }
+//
+//
+//    return 0;
+//}
+//
+///* 测试九：PTempResult Sort */
+//int test9(){
+//    vector<unsigned > n1 = {22, 1, 8, 40, 33};
+//    vector<unsigned > n2 = {3, 5, 1, 2, 4};
+//    vector<unsigned long long> e = {100, 88, 99, 111, 222};
+//    vector<GPStore::Value> v = { GPStore::Value(1.0), GPStore::Value("Hello"),
+//                                    GPStore::Value("Alice"), GPStore::Value(GPStore::Value::INTEGER),
+//                                    GPStore::Value(GPStore::Value::NO_VALUE) };
+//    v[3].data_.Int = -1;
+//
+//    vector<unsigned > node_var = {1, 2};
+//    vector<unsigned > edge_var = {3};
+//    vector<unsigned > value_var = {5};
+//    PTempResult res;
+//    res.head_.setColumnVarName(node_var, edge_var, value_var);
+//    for(int i = 0; i < 5; ++i){
+//        res.rows_.emplace_back();
+//        res.rows_.back().spo_id_.push_back(n1[i]);
+//        res.rows_.back().spo_id_.push_back(n2[i]);
+//        res.rows_.back().edge_id_.push_back(e[i]);
+//        res.rows_.back().values_.emplace_back(v[i]);
+//    }
+//    cout << "\n ========Print PTempResult========\n";
+//    res.print();
+//    cout << "\n ========Sort PTempResult========\n";
+//    vector<unsigned >cols ={ 0, 1, 2};
+//    res.sort(0, 4, cols);
+//    cout << "\n ========Print PTempResult========\n";
+//    res.print();
+//    return 0;
+//}
+//
+///* 测试十：计算器 */
+//int test10(){
+//    PCypherParser parser;
+//    std::string q1("RETURN \"abc\" starts with \"a\" ");
+//    std::string q2(" RETURN [1, null, \"happy\", {age:10}][2..4][1][\"age\"]");
+//    std::unique_ptr<CypherAST> ast(parser.CypherParse(q1));
+//    auto & with_ret = ast->single_querys_[0]->query_units_[0]->with_return_;
+//    auto v1 = PCalculator::evaluateConstExpression(with_ret->proj_exp_[0].get());
+//    ast.reset(parser.CypherParse(q2));
+//    auto v2 = PCalculator::evaluateConstExpression(
+//            ast->single_querys_[0]->query_units_[0]->with_return_->proj_exp_[0].get()
+//            );
+//    if(v1.type_ == GPStore::Value::BOOLEAN && v1.data_.Boolean){
+//        if(v2.type_ == GPStore::Value::INTEGER && v2.data_.Int == 10){
+//            return 0;
+//        }
+//        return 2;
+//    }
+//    return 1;
+//}
+//
+//int test11(){
+//    PCypherParser parser;
+//    std::ifstream fin(QueryPath + string("example_2.cypher"));
+//        std::unique_ptr<CypherAST> ast;
+//        try{
+//            ast.reset( parser.CypherParse(fin));
+//            PQueryTree qt;
+//            qt.GenerateQueryTree(ast.get());
+//        } catch (const runtime_error& e){
+//            cout << e.what() << endl;
+//        }
+//        fin.close();
+//    return 0;
+//}
 
 int main(){
 
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9,
-                     test10, test11};
-    for(int i = 0; i < 11; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7};//, test8, test9,    test10, test11
+    for(int i = 0; i < 7; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {

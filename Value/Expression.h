@@ -80,11 +80,8 @@ public:
 
     unsigned getVariableId() const;
 
-    void print(int dep) const;
+    void print( ) const;
 
-
-    /*  helper functions */
-    static void printHead(int dep, const char *name, bool colon = true, bool endline = true);
 
     static Atom *AtomDeepCopy(Atom *atom);
 
@@ -92,23 +89,24 @@ public:
 
     static std::vector<Expression *> split(Expression *exp, OperatorType oprt);
 
-    static Expression *VarPropertyToExpression(unsigned varid, unsigned propid, const GPStore::Expression *expr);
+    static Expression *VarPropertyToExpression(unsigned var_id, const std::string & var_name, unsigned prop_id,
+                                               const std::string & prop_key_name, GPStore::Expression *exp);
 
-    static Expression *JoinExpressionBy(std::vector<const Expression *> exprs, OperatorType oprt = AND);
+    static Expression *JoinExpressionBy(const std::vector<Expression *>  & exprs, OperatorType oprt = AND);
 };
 
 // 属性标签表达式，用于 p.props.age; a:Person 这类表达式
 class AtomPropertyLabels{
 public:
-    std::vector<std::string> key_names_;    // necessary
-    std::vector<std::string> node_labels_;  // necessary
+    std::vector<std::string> prop_key_names_;    // necessary
+    std::vector<std::string> labels_;  // necessary
     std::vector<unsigned> prop_ids_;  //id of keynames[0]; if invalid, UINT_MAX
+
     AtomPropertyLabels();
     AtomPropertyLabels(const AtomPropertyLabels &that);
     AtomPropertyLabels& operator=(const AtomPropertyLabels &that);
-    void addKeyName(const std::string &k);
-    void addNodeLabel(const std::string &l);
-    void print(int dep) const;
+
+    void print() const;
 };
 
 class Atom{
@@ -122,59 +120,55 @@ public:
     PVarset<std::pair<unsigned, unsigned>> covered_props_;
 
     Atom() = default;
-    virtual ~Atom() {
-
-	}
-    virtual void print(int dep)const = 0;
+    virtual ~Atom() { }
+    virtual void print() const = 0;
 };
 
 class Literal: public Atom{
 public:
 	enum LiteralType{BOOLEAN_LITERAL, NULL_LITERAL, INT_LITERAL, DOUBLE_LITERAL, STRING_LITERAL, LIST_LITERAL, MAP_LITERAL};
-	LiteralType literal_type;
-	double d;
-	long long i;
-	bool b;
-	std::string s;
-	std::vector<Expression *> list_literal;
-	std::map<std::string, Expression *> map_literal;
+	LiteralType literal_type_;
+	double d_;
+	long long i_;
+	bool b_;
+	std::string s_;
+	std::vector<Expression *> list_literal_;
+	std::map<std::string, Expression *> map_literal_;
     Literal();
     Literal(LiteralType lt);
     Literal(const Literal& that);
 
     ~Literal();
-    void print(int dep)const override;
+    void print()const override;
 };
 
 class Parameter: public Atom{
 public:
 	/* Cypher中的参数'$' ( oC_SymbolicName | DecimalInteger )，总是$开头，后面是字母串或者自然数*/
-	std::string symbolic_name;
-	unsigned  parameter_num;  // valid iff symbolic_name.length()==0
-    Parameter() ;
-    Parameter(unsigned n);
-    Parameter(const std::string &sym_name);
+	std::string param_name_;
+	unsigned  param_num_;  // valid iff symbolic_name.length()==0
+    Parameter();
     Parameter(const Parameter& that);
 
     ~Parameter();
-    void print(int dep) const override;
+    void print() const override;
 };
 
 class CaseExpression: public Atom{
 public:
 	enum CaseType{SIMPLE, GENERIC};
-    CaseType case_type;
-	Expression *test_expr;  // not null if case_type == SIMPLE
-	std::vector<Expression *> when_exprs;
-	std::vector<Expression *> then_exprs;
-	Expression *else_expr;
+    CaseType case_type_;
+	Expression *test_exp_;  // not null if case_type == SIMPLE
+	std::vector<Expression *> when_exps_;
+	std::vector<Expression *> then_exps_;
+	Expression *else_exp_;
 
     CaseExpression();
     CaseExpression(CaseType ct);
     CaseExpression(const CaseExpression &that);
     ~CaseExpression();
 
-    void print(int dep) const override;
+    void print() const override;
 };
 
 /* only for aggregate func count(*) */
@@ -185,10 +179,9 @@ public:
     Count(const Count& that);
     ~Count();
 
-    void print(int dep) const override;
+    void print() const override;
 };
-
-/* TODO: We dont support ListComprehension in this version */
+// TODO: We dont support list comprehension in this version.
 class ListComprehension: public Atom{
 public:
     /* [var in expression where filter | trans]*/
@@ -203,7 +196,7 @@ public:
     ~ListComprehension();
 
 
-    void print(int dep) const override;
+    void print() const override;
 };
 
 // TODO: We dont support pattern comprehension in this version.
@@ -218,7 +211,7 @@ public:
     PatternComprehension(const PatternComprehension& that);
     ~PatternComprehension();
 
-    void print(int dep) const override;
+    void print() const override;
 };
 
 // TODO: We dont support quantifier in this version.
@@ -237,7 +230,7 @@ public:
     Quantifier(const Quantifier& that);
     ~Quantifier();
 
-    void print(int dep) const override;
+    void print() const override;
 };
 
 // TODO: We dont support PatternPredicate in this version.
@@ -248,7 +241,7 @@ public:
     PatternPredicate(const PatternPredicate& that);
     ~PatternPredicate();
 
-    void print(int dep) const override;
+    void print() const override;
 };
 
 class FunctionInvocation : public Atom{
@@ -261,7 +254,7 @@ public:
     FunctionInvocation(const FunctionInvocation& that);
     ~FunctionInvocation();
     bool isAggregationFunction();
-    void print(int dep) const override;
+    void print() const override;
 };
 
 // TODO: We dont support ExistentialSubquery in this version.
@@ -275,7 +268,7 @@ public:
     ExistentialSubquery(const ExistentialSubquery& that);
     ~ExistentialSubquery();
 
-    void print(int dep) const override;
+    void print() const override;
 };
 
 class Variable: public Atom{
@@ -284,11 +277,11 @@ public:
 	std::string var_;
     unsigned id_;
     Variable();
-    Variable(const std::string &s);
     Variable(const Variable& that);
+    Variable(const std::string & var_name, unsigned var_id = ID_NONE);
     ~Variable();
 
-    void print(int dep) const override;
+    void print() const override;
 };
 
 class ParenthesizedExpression: public Atom{
@@ -298,7 +291,7 @@ public:
     ParenthesizedExpression(const ParenthesizedExpression& that);
     ~ParenthesizedExpression();
 
-    void print(int dep) const override;
+    void print() const override;
 };
 
 }   // namespace GPStore

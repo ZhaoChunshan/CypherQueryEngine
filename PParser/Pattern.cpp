@@ -17,7 +17,8 @@ GPStore::NodePattern::NodePattern(std::string _constant_str):type_(NODE_CONST), 
 }
 
 GPStore::NodePattern::NodePattern(const NodePattern& that):type_(that.type_), is_anno_var_(that.is_anno_var_), \
-var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), labels_(that.labels_), properties_(that.properties_), prop_id_(that.prop_id_),param_str_(that.param_str_){
+var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), labels_(that.labels_), \
+properties_(that.properties_), prop_id(that.prop_id),param_str_(that.param_str_){
 
 }
 
@@ -30,7 +31,7 @@ GPStore::NodePattern::operator=(const NodePattern& that){
     var_id_ = that.var_id_;
     labels_ = that.labels_;
     properties_ = that.properties_;
-    prop_id_ = that.prop_id_;
+    prop_id = that.prop_id;
     param_str_ = that.param_str_;
     return *this;
 }
@@ -45,27 +46,27 @@ bool GPStore::NodePattern::constraintEmpty() const{
 
 void GPStore::NodePattern::print() const{
     if(type_ == NODE_CONST){
-        std::printf("(%s)\n", constant_str_);
+        std::printf("(%s)", constant_str_.c_str());
         return;
     }
     
-    std::printf("(%s (id:%u) ", var_name_.c_str(), var_id_);
+    std::printf("(%s", var_name_.c_str());
     for(const auto& l : labels_){
         std::printf(" :%s",l.c_str());
     }
     if(properties_.size() != 0){
-        std::printf(")  Properties:\n");
-
+        std::printf("{ ");
         for(const auto& p : properties_){
-            std::printf("%s:\n", p.first.c_str());
-            p.second.print(0);
+            std::printf("%s: ", p.first.c_str());
+            p.second->print();
+            std::printf(", ");
         }
+        std::printf(" }");
     } else if(param_str_.size() != 0){
-        std::printf("  $%s)\n", param_str_.c_str());
+        std::printf("  $%s\n", param_str_.c_str());
     }
-    else{
-        std::printf(")\n");
-    }
+    std::printf(")");
+
 }
 
 
@@ -91,7 +92,7 @@ constant_str_(constant_str), is_edge_length_v_(false), range_left_(1), range_rig
 GPStore::EdgePattern::EdgePattern(const EdgePattern& that):type_(that.type_), arrow_direction_(that.arrow_direction_), \
 is_anno_var_(that.is_anno_var_), var_name_(that.var_name_), constant_str_(that.constant_str_), var_id_(that.var_id_), \
 is_edge_length_v_(that.is_edge_length_v_), range_left_(that.range_left_), range_right_(that.range_right_), \
-edge_types_(that.edge_types_), properties_(that.properties_), prop_id_(that.prop_id_),param_str_(that.param_str_){
+edge_types_(that.edge_types_), properties_(that.properties_), prop_id(that.prop_id),param_str_(that.param_str_){
 
 }
 
@@ -107,7 +108,7 @@ GPStore::EdgePattern& GPStore::EdgePattern::operator=(const EdgePattern& that){
     range_right_ = that.range_right_;
     edge_types_ = that.edge_types_;
     properties_ = that.properties_;
-    prop_id_ = that.prop_id_;
+    prop_id = that.prop_id;
     param_str_ = that.param_str_;
     return *this;
 }
@@ -123,7 +124,7 @@ bool GPStore::EdgePattern::constraintEmpty() const{
 
 void GPStore::EdgePattern::print() const{
     if(type_ == EDGE_CONST){
-        std::printf("-[%s]->\n", constant_str_.c_str());
+        std::printf("-[%s]->", constant_str_.c_str());
         return;
     }
     if(arrow_direction_ != LEFT_ARROW){
@@ -132,43 +133,55 @@ void GPStore::EdgePattern::print() const{
         std::printf("<-[");
     }
 
-    std::printf("%s(id:%u)", var_name_.c_str(), var_id_);
+    std::printf("%s", var_name_.c_str(), var_id_);
     for(const auto& t : edge_types_){
         std::printf(" :%s",t.c_str());
     }
 
+    if(properties_.size() != 0){
+        std::printf("{ ");
+        for(const auto& p : properties_){
+            std::printf("%s: ", p.first.c_str());
+            p.second->print();
+            std::printf(", ");
+        }
+        std::printf(" }");
+    } else if(param_str_.size() != 0){
+        std::printf("  $%s", param_str_.c_str());
+    }
+
+    if(is_edge_length_v_){
+        std::printf("*%llu .. %llu", range_left_, range_right_);
+    }
     if(arrow_direction_ != RIGHT_ARROW){
         std::printf("]-");
     }else{
         std::printf("]->");
     }
-    if(properties_.size() != 0){
-        std::printf("  Properties:\n");
-        for(const auto& p : properties_){
-            std::printf("%s:\n", p.first);
-            p.second.print(0);
-        }
-    }else{
-        std::printf("\n");
-    }
+
 }
 
 
-GPStore::RigidPattern::RigidPattern(){
+GPStore::RigidPattern::RigidPattern():var_id_(0xffffffffU), is_anno_var_(true){
 
 }
 
 GPStore::RigidPattern::RigidPattern(const GPStore::NodePattern& node):type_(PATH), 
 is_anno_var_(true){
-    nodes_.emplace_back(node);
+    nodes_.emplace_back(new NodePattern(node));
     covered_node_var_id_.addVar(node.var_id_);
     covered_var_id_.addVar(node.var_id_);
 }
 
 GPStore::RigidPattern::RigidPattern(const RigidPattern& that):type_(that.type_),
 var_name_(that.var_name_), var_id_(that.var_id_), is_anno_var_(that.is_anno_var_),
-nodes_(that.nodes_), edges_(that.edges_), covered_var_id_(that.covered_var_id_), covered_node_var_id_(that.covered_node_var_id_), covered_edge_var_id_(that.covered_edge_var_id_){
-
+covered_var_id_(that.covered_var_id_), covered_node_var_id_(that.covered_node_var_id_), covered_edge_var_id_(that.covered_edge_var_id_){
+    for(auto & n : that.nodes_){
+        this->nodes_.emplace_back(new NodePattern(*n));
+    }
+    for(auto & e: that.edges_){
+        this->edges_.emplace_back(new EdgePattern(*e));
+    }
 }
 
 GPStore::RigidPattern& GPStore::RigidPattern::operator=(const RigidPattern& that){
@@ -176,8 +189,12 @@ GPStore::RigidPattern& GPStore::RigidPattern::operator=(const RigidPattern& that
     var_name_ = that.var_name_;
     var_id_ = that.var_id_;
     is_anno_var_ = that.is_anno_var_;
-    nodes_ = that.nodes_;
-    edges_ = that.edges_;
+    for(auto & n : that.nodes_){
+        this->nodes_.emplace_back(new NodePattern(*n));
+    }
+    for(auto & e: that.edges_){
+        this->edges_.emplace_back(new EdgePattern(*e));
+    }
     covered_var_id_ = that.covered_var_id_;
     covered_node_var_id_ = that.covered_node_var_id_;
     covered_edge_var_id_ = that.covered_edge_var_id_;
@@ -189,11 +206,10 @@ GPStore::RigidPattern::~RigidPattern(){
 }
 
 void GPStore::RigidPattern::print() const{
-    std::printf("Rigid Pattern:\n");
     unsigned int n = edges_.size();
-    nodes_.at(0).print();
+    nodes_.at(0)->print();
     for(unsigned i = 0; i < n; ++i){
-        edges_.at(i).print();
-        nodes_.at(i + 1).print();
+        edges_.at(i)->print();
+        nodes_.at(i + 1)->print();
     }
 }

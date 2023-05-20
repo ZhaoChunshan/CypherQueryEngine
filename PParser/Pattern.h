@@ -29,15 +29,15 @@ public:
     std::string constant_str_;
     // For constant, it's id in kvstore; For variable, it's
     // Just a one to one map from var_name_ to var_id_
-    // For the convinience of edge conflict && filter injection
     unsigned var_id_;                
 
     // used for node_var and edge_var
     std::vector<std::string> labels_;
 
-    // for update clauses, may be parameters, e.g. CREATE (a $prop)
-    std::map<std::string, GPStore::Expression> properties_;
-    std::map<std::string, unsigned> prop_id_;
+    // Only for update clauses, may be parameters, e.g. CREATE (a $prop)
+    // For reading clauses, we extract constrain on property to filter.
+    std::map<std::string, std::shared_ptr<GPStore::Expression>> properties_;
+    std::map<std::string, unsigned> prop_id;
     std::string param_str_;
 
     NodePattern();
@@ -79,9 +79,10 @@ public:
     std::vector<std::string> edge_types_;
 
     // for update clauses, may be parameters, e.g. CREATE (a $1)
-    std::map<std::string, Expression> properties_;
-    std::map<std::string, unsigned> prop_id_;
+    std::map<std::string, std::shared_ptr<GPStore::Expression>> properties_;
+    std::map<std::string, unsigned> prop_id;
     std::string param_str_;
+
     EdgePattern();
     EdgePattern(bool is_anno, std::string _var_name, unsigned _var_id, EdgeArrowType _direction);
     EdgePattern(bool is_anno, std::string _var_name, unsigned _var_id, EdgeArrowType _direction, unsigned long long _left, unsigned long long _right);
@@ -109,8 +110,8 @@ public:
 
     bool is_anno_var_;
 
-    std::vector<NodePattern> nodes_;
-    std::vector<EdgePattern> edges_;
+    std::vector<std::unique_ptr<NodePattern>> nodes_;
+    std::vector<std::unique_ptr<EdgePattern>> edges_;
 
     // Named node vars and named edge vars
     PVarset<unsigned> covered_var_id_;

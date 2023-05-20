@@ -18,17 +18,17 @@ set(SOURCES
 		PParser/Cypher/CypherParser.cpp
 		PParser/Cypher/CypherVisitor.cpp
 		Value/Expression.cpp
-		Value/PCalculator.cpp
+#		Value/PCalculator.cpp
 		PParser/Pattern.cpp
 		PParser/CypherAST.cpp
 		PParser/PCypherParser.cpp
 		Value/Value.cpp
-		PQuery/PQueryOperator.cpp
-		PQuery/PQueryTree.cpp
-		PQuery/PTempResult.cpp
+#		PQuery/PQueryOperator.cpp
+#		PQuery/PQueryTree.cpp
+#		PQuery/PTempResult.cpp
 		test.cpp
 
-        PQuery/PQueryExecutor.h)
+        )
 # Add an executable with the above sources
 add_executable(${PROJECT_NAME} ${SOURCES})
 
