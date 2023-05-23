@@ -7,108 +7,213 @@
 
 #include "../PParser/Pattern.h"
 #include "PVarset.h"
+#include "../PParser/CypherAST.h"
+#include "../Util/util.h"
+
 
 /**
- * @brief class PQueryOperator: node of the PlanTree.
- * @warning Copy construct function and operator = only copy the content of the PQueryOperator; 
- * DONOT copy left, right, parent Pointer.
- * DONOT copy maximal_varset_, minimal_varset_
-*/
+ * @brief Class PQueryOperator: An operator, or an action that should be performed.
+ * */
 class PQueryOperator{
 public:
     enum OperatorType {
-        BGP, FILTER, 
+        BGP, FILTER, PROJECTION,        // three most important Operators
         AND, OPTIONAL, UNION, MINUS,    // 4 binary-operators
-        PROJECTION, SHORTEST_PATH,
-        ORDER_BY,
-        GROUP_BY, AGGREGATION,
-        UNWIND,
+        MODIFIER,                       // handle order by, skip, limit, distinct
+        UNWIND, CALL,                   // for cypher read clause unwind, call
+        CREATE, DELETE, SET, REMOVE,    // for cypher update clause
+        GROUP_BY, AGGREGATION,          // for aggregation
+        SHORTEST_PATH,                  // for shortest path operator
+
         // Not implement. 
         HAVING, SCOPE, BIND, TABLE
     };
 
-    enum UnionType { SPARQL_UNION, CYPHER_UNION, CYPHER_UNION_ALL };
-
     OperatorType type_;
-    PQueryOperator *left_, *right_;
-    PQueryOperator *parent_;
 
-    /* For optimization, since we may drop some vars that won't be used. */
+    /* For optimization(Projection Pushdown), since we may drop some vars that won't be used. */
     PVarset<unsigned> maximal_varset_, minimal_varset_;
 
-    /* only used for BGP */
-    std::vector<GPStore::RigidPattern> pattern_;
+    PQueryOperator() = default;
+    PQueryOperator(OperatorType ty):type_(ty){ }
+    virtual ~PQueryOperator() = default;
+    virtual void print(int dep = 0) const = 0;
+};
+
+class BGPOperator: public PQueryOperator {
+public:
+    std::vector<std::unique_ptr<GPStore::RigidPattern>> pattern_;
     PVarset<std::pair<unsigned, unsigned>> edge_conflict_;
+    std::vector<std::unique_ptr<GPStore::Expression>> filters_;
+    BGPOperator():PQueryOperator(BGP){ }
+    ~BGPOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    /* only used for operator union */
-    UnionType union_ty_;
+class FilterOperator: public PQueryOperator {
+public:
+    std::vector<std::unique_ptr<GPStore::Expression>> filters_;
+    FilterOperator():PQueryOperator(FILTER){ }
+    ~FilterOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    /* Mainly used for filter, the var occurs in the exp is string not id
-     * exp = f1 AND f2 AND f3 ... AND fn 
-     * We can inject Filters to other Node such as BGP , AND */
-    std::vector<GPStore::Expression> filters_;
-
-    /* only used for shortestPath */
-    bool is_all_shortest_;
-    unsigned src_, tgt_, path_var_id_;
-    GPStore::EdgePattern edge_pattern_;
-    
-    /* only used for projection */
-    std::vector<GPStore::Expression> proj_exps_;
+class ProjectionOperator: public PQueryOperator {
+public:
+    std::vector<std::unique_ptr<GPStore::Expression>> proj_exps_;
     std::vector<unsigned> var_id_;
+    ProjectionOperator():PQueryOperator(PROJECTION){ }
+    ~ProjectionOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    /* only used for order by */
-    std::vector<GPStore::Expression> order_exps_;
+
+class AndOperator : public PQueryOperator {
+public:
+    std::vector<std::unique_ptr<GPStore::Expression>> filters_;
+    AndOperator():PQueryOperator(AND){ }
+    ~AndOperator() override = default;
+    void print(int dep = 0) const override;
+};
+
+class OptionalOperator : public PQueryOperator {
+public:
+    OptionalOperator():PQueryOperator(OPTIONAL){ }
+    ~OptionalOperator() override = default;
+    void print(int dep = 0) const override;
+};
+
+class UnionOperator : public PQueryOperator {
+public:
+    enum UnionType { SPARQL_UNION, CYPHER_UNION};
+    UnionType union_ty_;
+    UnionOperator(UnionType union_ty = SPARQL_UNION):PQueryOperator(UNION), union_ty_(union_ty){ }
+    ~UnionOperator() override = default;
+    void print(int dep = 0) const override;
+};
+
+class MinusOperator : public PQueryOperator {
+public:
+    MinusOperator():PQueryOperator(MINUS){ }
+    ~MinusOperator() override = default;
+    void print(int dep = 0) const override;
+};
+
+class ModifierOperator : public PQueryOperator {
+public:
+    std::vector<std::unique_ptr<GPStore::Expression>> order_exps_;
     std::vector<bool> ascending_;
-    unsigned skip, limit; //default: 0, 0xffffffff
+    unsigned skip_, limit_; //default: 0, 0xffffffff
     bool distinct_;       // remove duplicated rows;
-    
-    /* only used for group by */
-    std::vector<unsigned> group_by_key_;
+    ModifierOperator():PQueryOperator(MODIFIER), skip_(0), limit_(INVALID), distinct_(false){ }
+    ~ModifierOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    /* only used for aggregation */
-    std::vector<GPStore::Expression> aggr_value_;
-    std::vector<unsigned> aggr_value_var_id_;
-
-    /* only used for unwind */
+class UnwindOperator : public PQueryOperator {
+public:
     std::unique_ptr<GPStore::Expression> unwind_;
-    unsigned unwind_var_id_;
+    unsigned var_id_;
+    UnwindOperator():PQueryOperator(UNWIND), var_id_(INVALID){ }
+    ~UnwindOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    PQueryOperator();
-    PQueryOperator(OperatorType op_type);
-    PQueryOperator(const PQueryOperator& that);
-    PQueryOperator& operator=(const PQueryOperator& that);
-    
-    ~PQueryOperator();
+class CallOperator : public PQueryOperator {
+public:
+    std::vector<std::string> procedure_name_;
+    std::vector<std::unique_ptr<GPStore::Expression>> args_;
+    std::vector<std::string> yield_items_;
+    std::vector<unsigned > yield_var_id_;
+    std::unique_ptr<GPStore::Expression> filter_;
+    CallOperator():PQueryOperator(CALL){ }
+    ~CallOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    void print(int dep) const;
 
-    void clipVarset(const PVarset<unsigned> & required);
+class CreateOperator : public PQueryOperator {
+public:
+    std::vector<std::unique_ptr<GPStore::RigidPattern>> pattern_;
+    CreateOperator():PQueryOperator(CREATE){ }
+    ~CreateOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    static PQueryOperator * mergeBGP(const std::vector<PQueryOperator *>& bgp);
+class DeleteOperator : public PQueryOperator {
+public:
+    bool detach;
+    std::vector<std::unique_ptr<GPStore::Expression>> exp_;
+    DeleteOperator():PQueryOperator(DELETE), detach(false){ }
+    ~DeleteOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    static PQueryOperator * mergeFilter(const PQueryOperator *filter1, const PQueryOperator *filter2);
+class SetOperator : public PQueryOperator {
+public:
+    /**
+     * ==================== var_names_ ====================
+     * ====================  var_ids_  ====================
+     * ========= labels =========||========= exps =========
+     */
+    std::vector<std::string> var_names_;
+    std::vector<unsigned > var_ids_;
+    // handle set node labels
+    std::vector<std::vector<std::string>> labels_;
+    // handle assign property && add property
+    std::vector<bool> add_property_;        // True: add(e.g. n += MapValue} ; False: assign(e.g. n = MapValue}
+    std::vector<std::unique_ptr<GPStore::Expression>> exps_;
 
-    static PQueryOperator * partitionConnectedComponent(PQueryOperator *bgp, PQueryOperator *root, const PQueryOperator *filter = nullptr);
+    /**
+     * ==================== prop_exps_ ====================
+     * ==================== prop_vals_ ====================
+     * */
+    std::vector<std::unique_ptr<GPStore::Expression>> prop_exps_;
+    std::vector<std::unique_ptr<GPStore::Expression>> prop_vals_;
+    SetOperator():PQueryOperator(SET){ }
+    ~SetOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    static std::pair<std::map<unsigned, unsigned> *, unsigned> calculateVarConnectedComponent(const PQueryOperator *bgp);
+class RemoveOperator : public PQueryOperator {
+public:
+    // remove var_names_[labels] OR remove prop_exp(e.g. a.age)
+    std::vector<std::string> var_names_;
+    std::vector<unsigned > var_ids_;
+    std::vector<std::vector<std::string>> labels_;  // labels will be removed
+    std::vector<std::unique_ptr<GPStore::Expression>> prop_exps_;   // prop will be removed
+    RemoveOperator():PQueryOperator(REMOVE){ }
+    ~RemoveOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    static GPStore::Expression * edgeConflictToExpression(unsigned e1, unsigned e2);
+class GroupByOperator : public PQueryOperator {
+public:
+    std::vector<unsigned> grouping_keys_;
+    GroupByOperator():PQueryOperator(GROUP_BY){ }
+    ~GroupByOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    static GPStore::Expression * propertyEqualityToExpression(unsigned var_id, const std::string & prop_name, unsigned prop_id, const GPStore::Expression & prop_val);
+class AggregationOperator : public PQueryOperator {
+public:
+    std::vector<unsigned > grouping_keys_;
+    std::vector<std::unique_ptr<GPStore::Expression>> aggr_value_;
+    std::vector<unsigned> aggr_var_id_;
+    AggregationOperator():PQueryOperator(AGGREGATION){ }
+    ~AggregationOperator() override = default;
+    void print(int dep = 0) const override;
+};
 
-    static GPStore::Expression * varIdToExpression(unsigned var_id);
-
-    static void rewriteShortestPathPattern(PQueryOperator *bgp);
-
-    static PQueryOperator * generateRelatedFilters(PQueryOperator *root, std::set<const GPStore::Expression *> & filters);
-
-    static PQueryOperator * generateBinaryOperator(PQueryOperator *left, PQueryOperator *right, PQueryOperator::OperatorType op);
-
-    static PQueryOperator * generateShortestPath(PQueryOperator *root, const GPStore::RigidPattern &pattern);
-
-    static PQueryOperator * generateProjectionVars(PQueryOperator *root, const std::vector<unsigned >& vars);
-private:
+class ShortestPathOperator : public PQueryOperator {
+public:
+    bool is_all_shortest_;
+    unsigned src_, tgt_, path_var_id_;  // remember check if it's invalid
+    std::unique_ptr<GPStore::EdgePattern> edge_pattern_;
+    ShortestPathOperator():PQueryOperator(SHORTEST_PATH), is_all_shortest_(false), \
+        src_(INVALID), tgt_(INVALID), path_var_id_(INVALID){ }
+    ~ShortestPathOperator() override = default;
+    void print(int dep = 0) const override;
 };
 
 #endif

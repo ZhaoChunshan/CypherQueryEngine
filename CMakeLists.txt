@@ -17,14 +17,14 @@ set(SOURCES
 		PParser/Cypher/CypherListener.cpp
 		PParser/Cypher/CypherParser.cpp
 		PParser/Cypher/CypherVisitor.cpp
+		Value/Value.cpp
 		Value/Expression.cpp
-#		Value/PCalculator.cpp
+		Value/PCalculator.cpp
 		PParser/Pattern.cpp
 		PParser/CypherAST.cpp
 		PParser/PCypherParser.cpp
-		Value/Value.cpp
-#		PQuery/PQueryOperator.cpp
-#		PQuery/PQueryTree.cpp
+		PQuery/PQueryOperator.cpp
+		PQuery/PQueryTree.cpp
 #		PQuery/PTempResult.cpp
 		test.cpp
 

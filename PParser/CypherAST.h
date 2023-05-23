@@ -198,12 +198,12 @@ public:
     // Orderby中用到的，而column_var_id_没投影的。
     std::vector<unsigned> implict_proj_var_id_; 
 
-    std::unique_ptr<GPStore::Expression> skip_; 
-    std::unique_ptr<GPStore::Expression> limit_;
+    unsigned skip_;
+    unsigned limit_;
     std::vector<std::unique_ptr<GPStore::Expression>> order_by_;    // 排序的变量名
     std::vector<bool> ascending_;    // 是否升序
     std::unique_ptr<GPStore::Expression> where_;
-    WithReturnAST()= default;
+    WithReturnAST(): skip_(0), limit_(INVALID){ }
     ~WithReturnAST()= default;
     void print(int dep) const;
 };

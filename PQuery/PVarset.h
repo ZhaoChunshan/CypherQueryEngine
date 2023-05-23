@@ -25,7 +25,10 @@ class PVarset
 
         PVarset(){};
         PVarset(const T &_var){  this->addVar(_var);}
-        PVarset(const PVarset<T> & that){ this->vars = that.vars;}
+        PVarset(const PVarset<T> & that){
+            for(auto & v : that.vars)
+                vars.push_back(v);
+        }
         PVarset(const std::vector<T> &_vars)
         {
             for (int i = 0; i < (int)_vars.size(); i++)
@@ -86,7 +89,9 @@ class PVarset
 
         PVarset& operator = (const PVarset & _varset) {
             if(this == &_varset) return *this;
-            vars = _varset.vars;
+            vars.clear();
+            for(auto & v : _varset.vars)
+                vars.push_back(v);
             return *this;
         }
 

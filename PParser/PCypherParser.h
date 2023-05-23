@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <map>
 #include "../Util/util.h"
-
+#include "../Value/Value.h"
 class CypherSymbol{
 public:
     enum VarType {NODE_VAR, EDGE_VAR, PATH_VAR, VALUE_VAR};
@@ -23,15 +23,15 @@ public:
 
 class SymbolTableStack{
 public:
-    PStore * pstore;                                    // TODO: Access PStore, to encode prop id!
-    std::vector<std::string> id2string_;                // Var id to string
+    KVstore * kvstore_;                                    // TODO: Access PStore, to encode prop id!
+	std::vector<std::string> id2string_;                // Var id to string
     std::unordered_map<std::string, unsigned> prop2id_; // Property key Name To ID
     std::map<unsigned, std::string> prop_id2string_;    // Property key ID To Property Name
     std::vector<std::unordered_map<std::string, CypherSymbol>> symbol_tb_st_;
     unsigned next_var_id_, next_anno_id_, next_prop_id_;
 public:
     SymbolTableStack(){reset();}
-    void setPStorePtr(PStore * ps);
+    void setKVstore(KVstore * _kvstore);
     bool exists(const std::string & var) const;
     CypherSymbol& search(const std::string & var) ;
     void insert(const std::string& var_name, const CypherSymbol& sym);
@@ -66,10 +66,12 @@ private:
 public:
 	PCypherParser(){}
 
-	CypherAST* CypherParse(const std::string &query, PStore * pstore = nullptr);	// Overall driver function
-    CypherAST* CypherParse(std::istream& in, PStore * pstore = nullptr);
+	CypherAST* CypherParse(const std::string &query, const std::shared_ptr<std::unordered_map<std::string, GPStore::Value>> &_param,
+	KVstore * _kvstore = nullptr);	// Overall driver function
+    CypherAST* CypherParse(std::istream& in, const std::shared_ptr<std::unordered_map<std::string, GPStore::Value>> &_param,KVstore * _kvstore = nullptr);
 
 private:
+	std::shared_ptr<std::unordered_map<std::string, GPStore::Value>> params_;
 
     /* helper functions */
     static long long parseIntegerLiteral(const std::string &s);

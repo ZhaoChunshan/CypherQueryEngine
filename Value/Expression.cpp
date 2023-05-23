@@ -103,6 +103,24 @@ GPStore::Expression::split(GPStore::Expression *exp, OperatorType oprt){
     return split_exps;
 }
 
+
+GPStore::Expression * GPStore::Expression::VarNonEqualToExpression(const std::string& var1, const std::string& var2, unsigned id1, unsigned id2){
+    GPStore::Variable * v1 = new GPStore::Variable(var1, id1);
+    GPStore::Variable * v2 = new GPStore::Variable(var2, id2);
+    GPStore::Expression *exp1 = new GPStore::Expression;
+    GPStore::Expression *exp2 = new GPStore::Expression;
+    GPStore::Expression *exp = new GPStore::Expression;
+    exp1->oprt_ = exp2->oprt_ = GPStore::Expression::EMPTY_OP;
+    exp1->atom_ = v1;
+    exp1->covered_var_id_.addVar(id1);
+    exp2->covered_var_id_.addVar(id2);
+    exp->oprt_ = GPStore::Expression::NOT_EQUAL;
+    exp->children_.push_back(exp1);
+    exp->children_.push_back(exp2);
+    exp->covered_var_id_ = exp->children_[0]->covered_var_id_ + exp->children_[1]->covered_var_id_;
+    return exp;
+}
+
 /**
  * @brief Transform `var.prop = exp` to an expression. After the call, exp can't be used.
  */
@@ -690,11 +708,16 @@ void GPStore::Quantifier::print() const{
     printf(")");
 }
 
+
 GPStore::PatternPredicate::PatternPredicate(){
+    atom_type_ = PATTERN_PREDICATE;
 }
 
 GPStore::PatternPredicate::PatternPredicate(const PatternPredicate& that){
+    atom_type_ = PATTERN_PREDICATE;
     this->pattern_.reset(new GPStore::RigidPattern(*that.pattern_));
+    this->covered_var_id_ = that.covered_var_id_;
+    this->covered_props_ = that.covered_props_;
 }   
 
 GPStore::PatternPredicate::~PatternPredicate(){
@@ -789,8 +812,10 @@ GPStore::Variable::Variable(const Variable& that){
 }
 
 GPStore::Variable::Variable(const std::string & var_name, unsigned var_id ){
+    atom_type_ = VARIABLE;
     var_ = var_name;
     id_ = var_id;
+    covered_var_id_.addVar(var_id);
 }
 
 GPStore::Variable::~Variable(){

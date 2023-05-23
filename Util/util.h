@@ -14,9 +14,8 @@ typedef unsigned long long TYPE_EDGE_ID;
 static const TYPE_ENTITY_LITERAL_ID INVALID_ENTITY_LITERAL_ID = 0xffffffff;
 static const TYPE_PROPERTY_ID INVALID_PROPERTY_ID = 0xffffffff;
 static const TYPE_EDGE_ID INVALID_EDGE_ID = 0xffffffffffffffff;
+static const unsigned INVALID = 0xffffffffU;
 typedef int TYPE_PREDICATE_ID;
-
-
 
 typedef int Transaction;
 typedef int KVstore;

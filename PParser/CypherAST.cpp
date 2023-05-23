@@ -182,17 +182,16 @@ void WithReturnAST::print(int dep) const{
         }
     }
     // limit
-    if(limit_){
+    if(limit_ != INVALID){
         printHead(dep + 1, "Limit");
-        printHead(dep + 2, "", false, false);
-        limit_->print();
+        printHead(dep + 2, std::to_string(limit_).c_str(), false, false);
+
         std::putchar('\n');
     }
     // skip
-    if(skip_){
+    if(skip_ != 0){
         printHead(dep + 1, "Skip");
-        printHead(dep + 2, "", false, false);
-        skip_->print();
+        printHead(dep + 2, std::to_string(skip_).c_str(), false, false);
         std::putchar('\n');
     }
 }

@@ -2,6 +2,7 @@
 #include <sstream>
 #include <algorithm>
 #include "PCypherParser.h"
+#include "PCalculator.h"
 
 /// TODO: Access PStore to encode property Id !!!
 
@@ -42,11 +43,12 @@ std::string PCypherParser::parseStringLiteral(const std::string &s){
 
 	@param query the query string.
 */
-CypherAST* PCypherParser::CypherParse(const std::string &query, PStore * pstore)
+CypherAST* PCypherParser::CypherParse(const std::string &query,const std::shared_ptr<std::unordered_map<std::string, GPStore::Value>> &_param,
+                                      KVstore * _kvstore)
 {
 	try{
 		std::istringstream ifs(query);
-        return CypherParse(ifs, pstore);
+        return CypherParse(ifs,_param, _kvstore);
 	}catch(const std::runtime_error& e1)
 	{
 		throw std::runtime_error(e1.what());
@@ -59,9 +61,11 @@ CypherAST* PCypherParser::CypherParse(const std::string &query, PStore * pstore)
 
 	@param in istream of the query.
 */
-CypherAST* PCypherParser::CypherParse(std::istream& in, PStore * pstore){
+CypherAST* PCypherParser::CypherParse(std::istream& in, const std::shared_ptr<std::unordered_map<std::string, GPStore::Value>> &_param,
+                                      KVstore * _kvstore){
     sym_tb_.reset();
-    sym_tb_.setPStorePtr(pstore);   ///TODO: set real pstore ptr.
+    sym_tb_.setKVstore(_kvstore);   ///TODO: set real pstore ptr.
+    this->params_ = params_;
     sym_tb_.push(); // go to global scope
     try{
         CypherErrorListener lstnr;
@@ -522,16 +526,18 @@ antlrcpp::Any PCypherParser::visitOC_Return(CypherParser::OC_ReturnContext *ctx)
 }
 /**
  * @brief visit ProjectionBody . Emmm, I'm not sure if this code is buggy.
+ * TODO: Assign same var_id for renamed var.
  * @param ctx pointer to CypherParser::OC_ProjectionBodyContext
  * @return GPStore::WithReturnAST *
 */
 antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionBodyContext *ctx, bool is_with){
 
-    std::unique_ptr<WithReturnAST> with_return(new WithReturnAST());    
+    std::unique_ptr<WithReturnAST> with_return(new WithReturnAST());
+    std::unique_ptr<GPStore::Expression> exp_tmp;
     with_return->with_ = is_with;
     with_return->distinct_ = ctx->DISTINCT() == nullptr ? false : true;
     with_return->asterisk_ = (ctx->oC_ProjectionItems()->children[0]->getText() == "*");
-
+    with_return->aggregation_ = false;
     for(auto proj_ctx : ctx->oC_ProjectionItems()->oC_ProjectionItem()){
         with_return->proj_exp_.emplace_back(
             visitOC_Expression(proj_ctx->oC_Expression()).as<GPStore::Expression*>()
@@ -611,15 +617,31 @@ antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionB
         with_return->implict_proj_var_id_ = (order_var - PVarset<unsigned>(with_return->column_var_id_) ).vars;
     }
 
-    if(with_return->aggregation_ && (order_var - PVarset<unsigned>(with_return->column_var_id_) ).vars.size()){
+    if(with_return->aggregation_ && !with_return->asterisk_ && with_return->implict_proj_var_id_.size()){
         throw std::runtime_error("[ERROR] Implicit grouping keys are not supported.");
     }
 
     if(ctx->oC_Limit()){
-        with_return->limit_.reset(visitOC_Expression(ctx->oC_Limit()->oC_Expression()).as<GPStore::Expression*>());
+        exp_tmp.reset(visitOC_Expression(ctx->oC_Limit()->oC_Expression()).as<GPStore::Expression*>());
+        if(!exp_tmp->covered_var_id_.empty()){
+            throw std::runtime_error("[ERROR] Only Constant Expression allowed in limit.");
+        }
+        auto v = PCalculator::evaluateConstExpression(exp_tmp.release(), *params_);
+        if(v.type_ != GPStore::Value::INTEGER || v.data_.Int < 0){
+            throw std::runtime_error("[ERROR] Only non-negative Integer allowed in limit.");
+        }
+        with_return->limit_ = v.data_.Int;
     }
     if(ctx->oC_Skip()){
-        with_return->skip_.reset(visitOC_Expression(ctx->oC_Skip()->oC_Expression()).as<GPStore::Expression*>());
+        exp_tmp.reset(visitOC_Expression(ctx->oC_Skip()->oC_Expression()).as<GPStore::Expression*>());
+        if(!exp_tmp->covered_var_id_.empty()){
+            throw std::runtime_error("[ERROR] Only Constant Expression allowed in skip.");
+        }
+        auto v = PCalculator::evaluateConstExpression(exp_tmp.release(), *params_);
+        if(v.type_ != GPStore::Value::INTEGER || v.data_.Int < 0){
+            throw std::runtime_error("[ERROR] Only non-negative Integer allowed in skip.");
+        }
+        with_return->skip_ = v.data_.Int;
     }
 
     if(!with_return->asterisk_)
@@ -1684,8 +1706,8 @@ antlrcpp::Any PCypherParser::visitOC_ParenthesizedExpression(CypherParser::OC_Pa
     return parenthesized;
 }
 
-void SymbolTableStack::setPStorePtr(PStore * ps){
-    pstore = ps;
+void SymbolTableStack::setKVstore(KVstore *_kvstore) {
+    kvstore_ = _kvstore;
 }
 
 bool SymbolTableStack::exists(const std::string & var) const{
@@ -1803,7 +1825,7 @@ unsigned SymbolTableStack::getPropId(const std::string &prop){
         return it->second;
     } else {
         // We use fake id now.
-        pstore;
+        kvstore_;
         unsigned new_id = next_prop_id_++;  // TODO: PStore::prop2id(prop)
         if(new_id != INVALID_PROPERTY_ID){
             prop2id_.insert(std::make_pair(prop, new_id));

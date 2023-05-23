@@ -89,7 +89,8 @@ public:
 
     static std::vector<Expression *> split(Expression *exp, OperatorType oprt);
 
-    static Expression *VarPropertyToExpression(unsigned var_id, const std::string & var_name, unsigned prop_id,
+    static Expression * VarNonEqualToExpression(const std::string& var1, const std::string& var2, unsigned id1, unsigned id2);
+    static Expression * VarPropertyToExpression(unsigned var_id, const std::string & var_name, unsigned prop_id,
                                                const std::string & prop_key_name, GPStore::Expression *exp);
 
     static Expression *JoinExpressionBy(const std::vector<Expression *>  & exprs, OperatorType oprt = AND);

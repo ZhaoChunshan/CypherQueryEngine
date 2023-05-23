@@ -82,15 +82,14 @@ PCalculator::evaluateExpression(
  * @brief evaluate a const expression.No Variable, No Node Edge, No PropertyLabel, No param
  * */
 GPStore::Value
-PCalculator::evaluateConstExpression(const GPStore::Expression *exp){
+PCalculator::evaluateConstExpression(const GPStore::Expression *exp, const std::unordered_map<std::string, GPStore::Value> & params){
     std::vector<unsigned > empty_spo;
     std::map<unsigned ,unsigned >empty_col;
     std::vector<unsigned long long > empty_edge;
     std::vector<GPStore::Value > empty_val;
     std::map<std::pair<unsigned ,unsigned >,unsigned > empty_var_prop2col;
-    std::unordered_map<std::string, GPStore::Value> empty_param;
     return evaluateExpression(exp, empty_spo, empty_col, empty_edge, empty_col, empty_val,
-                              empty_col, empty_var_prop2col,empty_param, nullptr);
+                              empty_col, empty_var_prop2col,params, nullptr);
 }
 
 GPStore::Value
@@ -427,9 +426,9 @@ GPStore::Value PCalculator::evaluateAtomExpression(
     if(val.isErrorValue() || val.isNull()) return val;
     if(exp->property_label_ == nullptr)
         return val;
-    if(!exp->property_label_->key_names_.empty()){
-        return evaluatePropertyOrMapKey(val, exp->property_label_->key_names_, pStore);
-    } else if(!exp->property_label_->node_labels_.empty()){
+    if(!exp->property_label_->prop_key_names_.empty()){
+        return evaluatePropertyOrMapKey(val, exp->property_label_->prop_key_names_, pStore);
+    } else if(!exp->property_label_->labels_.empty()){
         // a:Person:Student
         // TODO:we should check the existence of those labels.
         // call KVStore here
@@ -501,27 +500,27 @@ PCalculator::evaluateLiteral( const GPStore::Literal *literal,
             const std::unordered_map<std::string, GPStore::Value> & params,
             const PStore * pStore)
 {
-    auto ty = literal->literal_type;
+    auto ty = literal->literal_type_;
     if(ty == GPStore::Literal::BOOLEAN_LITERAL){
-        return literal->b;
+        return literal->b_;
     }else if(ty == GPStore::Literal::NULL_LITERAL){
         return GPStore::Value::NO_VALUE;
     }else if(ty == GPStore::Literal::INT_LITERAL){
-        return literal->i;
+        return literal->i_;
     }else if(ty == GPStore::Literal::DOUBLE_LITERAL){
-        return literal->d;
+        return literal->d_;
     }else if(ty == GPStore::Literal::STRING_LITERAL){
-        return literal->s;
+        return literal->s_;
     }else if(ty == GPStore::Literal::LIST_LITERAL){
         GPStore::Value ls(GPStore::Value::LIST);
-        for(auto & e : literal->list_literal){
+        for(auto & e : literal->list_literal_){
             ls.append(evaluateExpression(e, spo_embeddings, spo_id2col, edge_embeddings, edge_id2col,value_embeddings,
                                          value_id2col, var_prop_id2col, params, pStore));
         }
         return ls;
     }else if(ty == GPStore::Literal::MAP_LITERAL){
         GPStore::Value map_value(GPStore::Value::MAP);
-        for(auto &p : literal->map_literal){
+        for(auto &p : literal->map_literal_){
             map_value.insert(p.first, evaluateExpression(p.second, spo_embeddings, spo_id2col,edge_embeddings,edge_id2col,
                                                          value_embeddings,value_id2col,var_prop_id2col,params,pStore));
         }
@@ -533,8 +532,8 @@ PCalculator::evaluateLiteral( const GPStore::Literal *literal,
 GPStore::Value
 PCalculator::evaluateParameter( const GPStore::Parameter * p, const std::unordered_map<std::string, GPStore::Value> & params)
 {
-    if(!p->symbolic_name.empty()){
-        auto it = params.find(p->symbolic_name);
+    if(!p->param_name_.empty()){
+        auto it = params.find(p->param_name_);
         if(it == params.end()){
             return GPStore::Value::ERROR_VALUE;
         } else {
@@ -712,39 +711,39 @@ PCalculator::evaluateCaseExpression(
         const std::unordered_map<std::string, GPStore::Value> & params,
         const PStore * pStore
 ){
-    if(case_exp->case_type == GPStore::CaseExpression::SIMPLE){
-        GPStore::Value val = evaluateExpression(case_exp->test_expr, spo_embeddings, spo_id2col, edge_embeddings,
+    if(case_exp->case_type_ == GPStore::CaseExpression::SIMPLE){
+        GPStore::Value val = evaluateExpression(case_exp->test_exp_, spo_embeddings, spo_id2col, edge_embeddings,
                                                 edge_id2col, value_embeddings, value_id2col, var_prop_id2col,
                                                 params, pStore);
         if(val.isErrorValue()) return val;
-        int n = case_exp->when_exprs.size();
+        int n = case_exp->when_exps_.size();
         for(int i = 0; i < n; ++i){
-            auto v1 = evaluateExpression(case_exp->when_exprs[i], spo_embeddings, spo_id2col, edge_embeddings,
+            auto v1 = evaluateExpression(case_exp->when_exps_[i], spo_embeddings, spo_id2col, edge_embeddings,
                                          edge_id2col, value_embeddings, value_id2col, var_prop_id2col, params, pStore);
 
             if(v1.isErrorValue()) return v1;
             if(!valueEquality(val, v1))
                 continue;
 
-            return evaluateExpression(case_exp->then_exprs[i], spo_embeddings, spo_id2col, edge_embeddings,
+            return evaluateExpression(case_exp->then_exps_[i], spo_embeddings, spo_id2col, edge_embeddings,
                                          edge_id2col, value_embeddings, value_id2col, var_prop_id2col, params, pStore);
         }
     } else {
-        int n = case_exp->when_exprs.size();
+        int n = case_exp->when_exps_.size();
         for(int i = 0; i < n; ++i){
-            auto v1 = evaluateExpression(case_exp->when_exprs[i], spo_embeddings, spo_id2col, edge_embeddings,
+            auto v1 = evaluateExpression(case_exp->when_exps_[i], spo_embeddings, spo_id2col, edge_embeddings,
                                          edge_id2col, value_embeddings, value_id2col, var_prop_id2col, params, pStore);
 
             if(v1.isErrorValue()) return v1;
             if(v1.type_ != GPStore::Value::BOOLEAN || !v1.data_.Boolean)
                 continue;
 
-            return evaluateExpression(case_exp->then_exprs[i], spo_embeddings, spo_id2col, edge_embeddings,
+            return evaluateExpression(case_exp->then_exps_[i], spo_embeddings, spo_id2col, edge_embeddings,
                                       edge_id2col, value_embeddings, value_id2col, var_prop_id2col, params, pStore);
         }
     }
-    if(case_exp->else_expr != nullptr)
-        return evaluateExpression(case_exp->else_expr, spo_embeddings, spo_id2col, edge_embeddings,
+    if(case_exp->else_exp_ != nullptr)
+        return evaluateExpression(case_exp->else_exp_, spo_embeddings, spo_id2col, edge_embeddings,
                                   edge_id2col, value_embeddings, value_id2col, var_prop_id2col, params, pStore);
 
     return GPStore::Value::NO_VALUE;

@@ -5,9 +5,7 @@
 #include "Value.h"
 #include "Expression.h"
 #include <cmath>
-// We should use PStore later then
-typedef void PStore;
-
+#include "../Util/util.h"
 class PCalculator{
 public:
     /**
@@ -40,7 +38,7 @@ public:
 
 
     static GPStore::Value
-    evaluateConstExpression(const GPStore::Expression *exp);
+    evaluateConstExpression(const GPStore::Expression *exp, const std::unordered_map<std::string, GPStore::Value> & params);
 
     static GPStore::Value
     evaluateBinaryLogicalExpression(

@@ -2,6 +2,7 @@
 #include "Expression.h"
 #include "PCypherParser.h"
 #include "PQueryTree.h"
+
 //#include "PTempResult.h"
 //#include "PCalculator.h"
 #include <fstream>
@@ -9,9 +10,18 @@
 #include <algorithm>
 #include <iostream>
 using namespace std;
+std::shared_ptr< std::unordered_map<std::string, GPStore::Value>> param(new  std::unordered_map<std::string, GPStore::Value>);
 
 std::string QueryPath = "../Queries/";
 const char *s[]= {
+        "interactive-short-1.cypher",
+        "interactive-short-2.cypher",
+        "interactive-short-3.cypher",
+        "interactive-short-4.cypher",
+        "interactive-short-5.cypher",
+        "interactive-short-6.cypher",
+        "interactive-short-7.cypher",
+
         "interactive-complex-1.cypher",
         "interactive-complex-2.cypher",
         "interactive-complex-3.cypher",
@@ -26,13 +36,7 @@ const char *s[]= {
         "interactive-complex-12.cypher",
         "interactive-complex-13.cypher",
         "interactive-complex-14.cypher",
-        "interactive-short-1.cypher",
-        "interactive-short-2.cypher",
-        "interactive-short-3.cypher",
-        "interactive-short-4.cypher",
-        "interactive-short-5.cypher",
-        "interactive-short-6.cypher",
-        "interactive-short-7.cypher",
+
         "interactive-update-1.cypher",
         "interactive-update-2.cypher",
         "interactive-update-3.cypher",
@@ -41,6 +45,7 @@ const char *s[]= {
         "interactive-update-6.cypher",
         "interactive-update-7.cypher",
         "interactive-update-8.cypher",
+
         "interactive-delete-1.cypher",
         "interactive-delete-2.cypher",
         "interactive-delete-3.cypher",
@@ -162,6 +167,7 @@ int test6(){
 /* 测试七: 抽象语法树 */
 int test7(){
     PCypherParser parser;
+
     // std::cout << std::endl;
     for(int i = 0; i < 37; ++i){
         std::unique_ptr<CypherAST> ast;
@@ -169,7 +175,7 @@ int test7(){
         // std::cout << "===========Parse AST For " << s[i] << "===========" << std::endl;
 
         try{
-            ast.reset(parser.CypherParse(fin, nullptr));
+            ast.reset(parser.CypherParse(fin, param ,nullptr));
             // ast->print(0);
         } catch (const runtime_error& e){
             cout << e.what() << endl;
@@ -178,30 +184,36 @@ int test7(){
     }
     return 0;
 }
-//
-///* 测试八：逻辑执行树 */
-//int test8(){
+
+
+/* 测试八：逻辑执行树 */
+int test8(){
 //    cout << endl;
-//
-//    PCypherParser parser;
-//    for(int i = 0; i < 21; ++i){
-//        std::ifstream fin(QueryPath + string(s[i]));
-//        std::unique_ptr<CypherAST> ast;
-//        try{
-//            ast.reset( parser.CypherParse(fin));
-//            PQueryTree qt;
-//            qt.GenerateQueryTree(ast.get());
-//            cout << "Generate QueryTree For: " << s[i] << " Passed." << endl;
-//        } catch (const runtime_error& e){
-//            cout << e.what() << endl;
-//        }
-//        fin.close();
-//    }
-//
-//
-//    return 0;
-//}
-//
+
+    PCypherParser parser;
+    for(int i = 0; i < 37; ++i){
+        std::ifstream fin(QueryPath + string(s[i]));
+//        std::cout << "===========Generate QueryTree For " << s[i] << "===========" << std::endl;
+        std::unique_ptr<CypherAST> ast;
+        std::unique_ptr<PTreeNode> plan;
+        try{
+            ast.reset( parser.CypherParse(fin, param, nullptr));
+            plan.reset(PQueryTree::GenerateQueryTree(ast.get()));
+//            std::cout << "===========Variable Encoding " << s[i] << "===========" << std::endl;
+//            int n = ast->id2var_name_->size();
+//            for(int i = 0; i < n; ++i){
+//                std::printf("%5d\t%s\n",i,ast->id2var_name_->at(i).c_str());
+//            }
+//            plan->print();
+        } catch (const runtime_error& e){
+            cout << e.what() << endl;
+            return 1;
+        }
+        fin.close();
+    }
+    return 0;
+}
+
 ///* 测试九：PTempResult Sort */
 //int test9(){
 //    vector<unsigned > n1 = {22, 1, 8, 40, 33};
@@ -272,8 +284,8 @@ int test7(){
 
 int main(){
 
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7};//, test8, test9,    test10, test11
-    for(int i = 0; i < 7; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8};//, test8, test9,    test10, test11
+    for(int i = 0; i < 8; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {
