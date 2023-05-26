@@ -381,7 +381,12 @@ PTreeNode * PQueryTree::GetQueryTree(const WithReturnAST* with_return, PTreeNode
     if(with_return->skip_ != 0 || with_return->limit_ != INVALID || !with_return->order_by_.empty() ||
         with_return->distinct_){
         modifier.reset(new ModifierOperator);
-        modifier->distinct_ = with_return->distinct_;
+        if(with_return->distinct_){
+            modifier->distinct_ = with_return->distinct_;
+            PVarset<unsigned > dis_var = with_return->column_var_id_;
+            if(with_return->asterisk_)
+                dis_var += with_return->implict_proj_var_id_;
+        }
         modifier->limit_ = with_return->limit_;
         modifier->skip_ = with_return->skip_;
         for(int i = 0; i < (int)with_return->order_by_.size(); ++i){

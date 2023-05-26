@@ -764,6 +764,7 @@ void GPStore::Value::Destruct(){
         default:
             break;
     }
+    type_ = NO_VALUE;
     return;
 }
 

@@ -294,6 +294,10 @@ bool GPStore::Expression::containsAggrFunc() const{
 
         } else if(atom_ty ==  Atom::VARIABLE){
 
+        } else if(atom_ty == Atom::PARENTHESIZED_EXPRESSION){
+            auto par_exp = dynamic_cast<ParenthesizedExpression*>(atom_);
+            if(par_exp->exp_->containsAggrFunc())
+                return true;
         }
     }
     return false;
@@ -571,11 +575,12 @@ void GPStore::CaseExpression::print() const {
 
 /* class Count */
 
-GPStore::Count::Count(){
+GPStore::Count::Count():cnt(0){
     atom_type_ = COUNT;
 }   
 
 GPStore::Count::Count(const Count& that){
+    cnt = that.cnt;
     atom_type_ = COUNT;
 }
 
@@ -750,7 +755,7 @@ GPStore::FunctionInvocation::~FunctionInvocation(){
             delete e;
 }
 
-bool GPStore::FunctionInvocation::isAggregationFunction(){
+bool GPStore::FunctionInvocation::isAggregationFunction()const{
     if(func_name_.size() != 1) return false;
 
     std::string str = func_name_[0];

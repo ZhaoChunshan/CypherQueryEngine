@@ -54,8 +54,8 @@ const char *s[]= {
         "interactive-delete-6.cypher",
         "interactive-delete-7.cypher",
         "interactive-delete-8.cypher",
-        "test_list_comprehension.cypher"
-
+        "test_list_comprehension.cypher",
+        "example_2.cypher"
 
 };
 
@@ -188,23 +188,23 @@ int test7(){
 
 /* 测试八：逻辑执行树 */
 int test8(){
-//    cout << endl;
+    cout << endl;
 
     PCypherParser parser;
-    for(int i = 0; i < 37; ++i){
+    for(int i = 0; i < 39; ++i){
         std::ifstream fin(QueryPath + string(s[i]));
-//        std::cout << "===========Generate QueryTree For " << s[i] << "===========" << std::endl;
+        std::cout << "===========Generate QueryTree For " << s[i] << "===========" << std::endl;
         std::unique_ptr<CypherAST> ast;
         std::unique_ptr<PTreeNode> plan;
         try{
             ast.reset( parser.CypherParse(fin, param, nullptr));
             plan.reset(PQueryTree::GenerateQueryTree(ast.get()));
-//            std::cout << "===========Variable Encoding " << s[i] << "===========" << std::endl;
-//            int n = ast->id2var_name_->size();
-//            for(int i = 0; i < n; ++i){
-//                std::printf("%5d\t%s\n",i,ast->id2var_name_->at(i).c_str());
-//            }
-//            plan->print();
+            std::cout << "===========Variable Encoding " << s[i] << "===========" << std::endl;
+            int n = ast->id2var_name_->size();
+            for(int i = 0; i < n; ++i){
+                std::printf("%5d\t%s\n",i,ast->id2var_name_->at(i).c_str());
+            }
+            plan->print();
         } catch (const runtime_error& e){
             cout << e.what() << endl;
             return 1;

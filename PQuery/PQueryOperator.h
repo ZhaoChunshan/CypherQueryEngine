@@ -105,6 +105,7 @@ public:
     std::vector<bool> ascending_;
     unsigned skip_, limit_; //default: 0, 0xffffffff
     bool distinct_;       // remove duplicated rows;
+    std::vector<unsigned > distinct_vars;
     ModifierOperator():PQueryOperator(MODIFIER), skip_(0), limit_(INVALID), distinct_(false){ }
     ~ModifierOperator() override = default;
     void print(int dep = 0) const override;

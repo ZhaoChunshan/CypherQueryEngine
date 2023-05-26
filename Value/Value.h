@@ -142,7 +142,7 @@ private:
     bool ListEqualTo(const Value &other) const;
     bool MapEqualTo(const Value &other) const;
     bool NoValueEqualTo(const Value &other) const;
-
+public:
     /* destruct functions */
     void Destruct();
 };

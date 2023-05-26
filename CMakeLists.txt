@@ -25,10 +25,11 @@ set(SOURCES
 		PParser/PCypherParser.cpp
 		PQuery/PQueryOperator.cpp
 		PQuery/PQueryTree.cpp
-#		PQuery/PTempResult.cpp
+		PQuery/PTempResult.cpp
+		PQuery/PGeneralEvaluation.cpp
 		test.cpp
 
-        )
+		)
 # Add an executable with the above sources
 add_executable(${PROJECT_NAME} ${SOURCES})
 

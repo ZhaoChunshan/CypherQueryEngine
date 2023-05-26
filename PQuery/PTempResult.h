@@ -8,16 +8,7 @@
 #include "../Value/Expression.h"
 #include "../Value/Value.h"
 #include "PVarset.h"
-
-// copy from util.h of gpstore 1.2 branch
-// if merge code, just remove this and #include "util.h"
-using NodeType = unsigned ;
-typedef unsigned TYPE_ENTITY_LITERAL_ID;
-typedef unsigned TYPE_PROPERTY_ID;
-typedef unsigned long long TYPE_EDGE_ID;
-static const TYPE_ENTITY_LITERAL_ID INVALID_ENTITY_LITERAL_ID = 0xffffffff;
-static const TYPE_PROPERTY_ID INVALID_PROPERTY_ID = 0xffffffff;
-static const TYPE_EDGE_ID INVALID_EDGE_ID = 0xffffffffffffffff;
+#include "../Util/util.h"
 
 class PTempResult {
 public:
@@ -37,8 +28,8 @@ public:
         Header& operator=(const Header & that);
         ~Header() = default;
         void initColumnInfoByVarset();
-        void setColumnVarName(const std::vector<unsigned > & spo_var, const std::vector<unsigned > & edge_var,
-                        const std::vector<unsigned > & other_var);
+        void setVarset(const std::vector<unsigned > & spo_var, const std::vector<unsigned > & edge_var,
+                       const std::vector<unsigned > & other_var,const std::vector<std::pair<unsigned,unsigned>> & prop);
     };
     class Record{
     public:
@@ -75,36 +66,40 @@ public:
     void sort(int l, int r, const std::vector<unsigned> & this_cols, const std::vector<bool> &asc);
 
     void sort(int l, int r, const std::vector<const GPStore::Expression *> & exps,
-              const std::vector<bool> &asc, const void * pStore, const std::unordered_map<std::string, GPStore::Value> & param);
+              const std::vector<bool> &asc, KVstore * _kvstore,
+              const std::unordered_map<std::string, GPStore::Value> * params);
 
     int findLeftBounder(const Record& x, const std::vector<unsigned >& x_cols, const std::vector<unsigned >& this_cols) const;
     int findRightBounder(const Record& x, const std::vector<unsigned >& x_cols, const std::vector<unsigned >& this_cols) const;
 
-    std::vector<unsigned > extend(const std::vector<const GPStore::Expression *> & exps, const void * pstore,
-                                  const std::unordered_map<std::string, GPStore::Value> & param);
+    void extend(const GPStore::Expression * exp, KVstore * _kvstore, const std::unordered_map<std::string, GPStore::Value> * params);
 
-    std::vector<unsigned > expsToCols(const std::vector<const GPStore::Expression *> & exps, const void * pstore,
-                                      const std::unordered_map<std::string, GPStore::Value> & param);
+    std::vector<unsigned > projectionView(const std::vector<const GPStore::Expression *> & exps, KVstore * _kvstore,
+                                      const std::unordered_map<std::string, GPStore::Value> * params);
 
     void doJoin(PTempResult &x, PTempResult &r, const std::vector<unsigned >& x_cols, const std::vector<unsigned >& this_cols);
     void doCartesianProduct(PTempResult &x, PTempResult &r);
     void doUnion(PTempResult &r);
-    void doOptional(PTempResult &x, PTempResult &r, const std::vector<unsigned >& x_cols,
+    void doLeftOuterJoin(PTempResult &x, PTempResult &r, const std::vector<unsigned >& x_cols,
                     const std::vector<unsigned >& this_cols);
-    void doFilter(const GPStore::Expression * filter, PTempResult &r, const void * pstore,
-                  const std::unordered_map<std::string, GPStore::Value> & param);
-    void doProjection(const std::vector<GPStore::Expression> & proj_exp, const std::vector<unsigned > & alias, const void * pstore);
-    void doDistinct(const std::vector<unsigned > & this_cols);
+    void doFilter(PTempResult &r, const GPStore::Expression * filter, KVstore * _kvstore,
+                  const std::unordered_map<std::string, GPStore::Value> * params);
+    void doProjection(const std::vector<const GPStore::Expression *> & proj_exps, const std::vector<unsigned > & alias,
+                      const std::vector<unsigned > & keep_vars,
+                      KVstore * _kvstore, const std::unordered_map<std::string, GPStore::Value> * params);
+    void doDistinct(PTempResult &r, const std::vector<unsigned > & dis_cols, const std::vector<unsigned > already_order);
+    void doUnwind(PTempResult &r, const GPStore::Expression * exp,  unsigned var_id, KVstore * _kvstore,
+                  const std::unordered_map<std::string, GPStore::Value> * params);
+    std::vector<unsigned > doGroupBy(const std::vector<unsigned > & grouping_keys);
+    void doAggregation(PTempResult &r, const std::vector<unsigned > & groups, const std::vector<const GPStore::Expression *> & aggr_val,
+                       std::vector<unsigned > aggr_id,  KVstore * _kvstore,
+                       const std::unordered_map<std::string, GPStore::Value> * params);
+    void doLimit(PTempResult &r, unsigned limit = INVALID, unsigned skip = 0);
 private:
 
     static std::vector<int> mapTo(const PVarset<unsigned > &from, const std::map<unsigned ,unsigned > & id2col);
     static std::vector<int> mapTo(const PVarset<std::pair<unsigned ,unsigned >> &from,
                      const std::map<std::pair<unsigned ,unsigned > ,unsigned > & id2col);
-    static void generateRow(PTempResult &r, Record & x, Record & y,
-                            const std::vector<int> & r_spo2x_col, const std::vector<int> & r_spo2y_col,
-                            const std::vector<int> & r_edge2x_col, const std::vector<int> & r_edge2y_col,
-                            const std::vector<int> & r_val2x_col, const std::vector<int> & r_val2y_col,
-                            const std::vector<int> & r_prop2x_col,const std::vector<int> &  r_prop2y_col);
     static void generateRow(Record &r, Record & x, Record & y,
                             const std::vector<int> & r_spo2x_col, const std::vector<int> & r_spo2y_col,
                             const std::vector<int> & r_edge2x_col, const std::vector<int> & r_edge2y_col,
@@ -116,6 +111,21 @@ private:
                             const std::vector<int> & r_edge2x_col,
                             const std::vector<int> & r_val2x_col,
                             const std::vector<int> & r_prop2x_col);
+    void copyColumn(unsigned col_id, unsigned part_num);
+
+    void
+    evaluateAggregationExpression(GPStore::Expression *exp, int _begin, int _end, KVstore * _kvstore,
+                                  const std::unordered_map<std::string, GPStore::Value> * params);
+
+    void
+    evaluateAggregationExpression(GPStore::Atom *atom, int _begin, int _end, KVstore * _kvstore,
+                                  const std::unordered_map<std::string, GPStore::Value> * params);
+
+    void
+    evaluateAggregationFunction(GPStore::FunctionInvocation *func, int _begin, int _end, KVstore * _kvstore,
+                                const std::unordered_map<std::string, GPStore::Value> * params);
+
+    static void removeDuplicate(std::vector<GPStore::Value> & values);
 
 };
 

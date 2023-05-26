@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <memory>
+#include "Value.h"
 /* make it able to be compiled */
 namespace GPStore{
     class Expression;
@@ -175,7 +176,7 @@ public:
 /* only for aggregate func count(*) */
 class Count : public Atom{
 public:
-
+    unsigned cnt;       // save result for aggr function.
     Count();
     Count(const Count& that);
     ~Count();
@@ -247,6 +248,7 @@ public:
 
 class FunctionInvocation : public Atom{
 public:
+    GPStore::Value val_;    // to save result of Aggregation function.
 	std::vector<std::string> func_name_;
 	bool distinct;	// for example, count(DISTINCT p.city)
 	std::vector<Expression *> args;
@@ -254,7 +256,7 @@ public:
     FunctionInvocation();
     FunctionInvocation(const FunctionInvocation& that);
     ~FunctionInvocation();
-    bool isAggregationFunction();
+    bool isAggregationFunction() const;
     void print() const override;
 };
 

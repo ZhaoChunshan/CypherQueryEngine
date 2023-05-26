@@ -32,13 +32,15 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
             );
 
 
     static GPStore::Value
-    evaluateConstExpression(const GPStore::Expression *exp, const std::unordered_map<std::string, GPStore::Value> & params);
+    evaluateConstExpression(const GPStore::Expression *exp, const std::unordered_map<std::string, GPStore::Value> * params);
+
+
 
     static GPStore::Value
     evaluateBinaryLogicalExpression(
@@ -50,8 +52,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
             );
 
     static GPStore::Value
@@ -64,8 +66,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -78,8 +80,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -92,8 +94,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -106,8 +108,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -120,8 +122,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -134,8 +136,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -148,8 +150,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -162,8 +164,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -176,8 +178,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -190,8 +192,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -203,11 +205,11 @@ public:
                      const std::vector<GPStore::Value> & value_embeddings,
                      const std::map<unsigned, unsigned> & value_id2col,
                      const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-                     const std::unordered_map<std::string, GPStore::Value> & params,
-                     const PStore * pStore);
+                     const std::unordered_map<std::string, GPStore::Value> * params,
+                     KVstore * _kvstore);
 
     static GPStore::Value
-    evaluateParameter( const GPStore::Parameter * p, const std::unordered_map<std::string, GPStore::Value> & params);
+    evaluateParameter( const GPStore::Parameter * p, const std::unordered_map<std::string, GPStore::Value> * params);
 
     static GPStore::Value
     evaluateVariable(
@@ -230,8 +232,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -244,8 +246,8 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
@@ -258,12 +260,12 @@ public:
             const std::vector<GPStore::Value> & value_embeddings,
             const std::map<unsigned, unsigned> & value_id2col,
             const std::map<std::pair<unsigned ,unsigned >, unsigned > & var_prop_id2col,
-            const std::unordered_map<std::string, GPStore::Value> & params,
-            const PStore * pStore
+            const std::unordered_map<std::string, GPStore::Value> * params,
+            KVstore * _kvstore
     );
 
     static GPStore::Value
-    evaluatePropertyOrMapKey(const GPStore::Value & x, const std::vector<std::string> & keynames, const PStore * pStore);
+    evaluatePropertyOrMapKey(const GPStore::Value & x, const std::vector<std::string> & keynames, KVstore * _kvstore);
 
     static GPStore::Value
     logicalAnd(const GPStore::Value & x, const GPStore::Value & y);
