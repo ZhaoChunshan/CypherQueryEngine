@@ -29,7 +29,7 @@ set(SOURCES
 		PQuery/PGeneralEvaluation.cpp
 		test.cpp
 
-		)
+        PQuery/PBGPQuery.cpp PQuery/PBGPQuery.h)
 # Add an executable with the above sources
 add_executable(${PROJECT_NAME} ${SOURCES})
 

@@ -3,8 +3,8 @@
 #include "PCypherParser.h"
 #include "PQueryTree.h"
 
-//#include "PTempResult.h"
-//#include "PCalculator.h"
+#include "PTempResult.h"
+#include "PCalculator.h"
 #include <fstream>
 #include <memory>
 #include <algorithm>
@@ -193,18 +193,18 @@ int test8(){
     PCypherParser parser;
     for(int i = 0; i < 39; ++i){
         std::ifstream fin(QueryPath + string(s[i]));
-        std::cout << "===========Generate QueryTree For " << s[i] << "===========" << std::endl;
+        //std::cout << "===========Generate QueryTree For " << s[i] << "===========" << std::endl;
         std::unique_ptr<CypherAST> ast;
         std::unique_ptr<PTreeNode> plan;
         try{
             ast.reset( parser.CypherParse(fin, param, nullptr));
             plan.reset(PQueryTree::GenerateQueryTree(ast.get()));
-            std::cout << "===========Variable Encoding " << s[i] << "===========" << std::endl;
-            int n = ast->id2var_name_->size();
-            for(int i = 0; i < n; ++i){
-                std::printf("%5d\t%s\n",i,ast->id2var_name_->at(i).c_str());
-            }
-            plan->print();
+//            std::cout << "===========Variable Encoding " << s[i] << "===========" << std::endl;
+//            int n = ast->id2var_name_->size();
+//            for(int i = 0; i < n; ++i){
+//                std::printf("%5d\t%s\n",i,ast->id2var_name_->at(i).c_str());
+//            }
+//            plan->print();
         } catch (const runtime_error& e){
             cout << e.what() << endl;
             return 1;
@@ -214,38 +214,75 @@ int test8(){
     return 0;
 }
 
-///* 测试九：PTempResult Sort */
-//int test9(){
-//    vector<unsigned > n1 = {22, 1, 8, 40, 33};
-//    vector<unsigned > n2 = {3, 5, 1, 2, 4};
-//    vector<unsigned long long> e = {100, 88, 99, 111, 222};
-//    vector<GPStore::Value> v = { GPStore::Value(1.0), GPStore::Value("Hello"),
-//                                    GPStore::Value("Alice"), GPStore::Value(GPStore::Value::INTEGER),
-//                                    GPStore::Value(GPStore::Value::NO_VALUE) };
-//    v[3].data_.Int = -1;
-//
-//    vector<unsigned > node_var = {1, 2};
-//    vector<unsigned > edge_var = {3};
-//    vector<unsigned > value_var = {5};
-//    PTempResult res;
-//    res.head_.setColumnVarName(node_var, edge_var, value_var);
-//    for(int i = 0; i < 5; ++i){
-//        res.rows_.emplace_back();
-//        res.rows_.back().spo_id_.push_back(n1[i]);
-//        res.rows_.back().spo_id_.push_back(n2[i]);
-//        res.rows_.back().edge_id_.push_back(e[i]);
-//        res.rows_.back().values_.emplace_back(v[i]);
-//    }
-//    cout << "\n ========Print PTempResult========\n";
-//    res.print();
-//    cout << "\n ========Sort PTempResult========\n";
-//    vector<unsigned >cols ={ 0, 1, 2};
-//    res.sort(0, 4, cols);
-//    cout << "\n ========Print PTempResult========\n";
-//    res.print();
-//    return 0;
-//}
-//
+/* 测试九：PTempResult Sort */
+int test9(){
+    vector<unsigned > n1 = {22, 1, 8, 40, 33};
+    vector<unsigned > n2 = {3, 5, 1, 2, 4};
+    vector<unsigned long long> e = {100, 88, 99, 111, 222};
+    vector<GPStore::Value> v = { GPStore::Value(1.0), GPStore::Value("Hello"),
+                                    GPStore::Value("Alice"), GPStore::Value(GPStore::Value::INTEGER),
+                                    GPStore::Value(GPStore::Value::NO_VALUE) };
+    v[3].data_.Int = -1;
+
+    vector<unsigned > node_var = {1, 2};
+    vector<unsigned > edge_var = {3};
+    vector<unsigned > value_var = {5};
+    PTempResult res;
+    res.head_.setVarset(node_var, edge_var, value_var, {});
+    res.head_.initColumnInfoByVarset();
+    for(int i = 0; i < 5; ++i){
+        res.rows_.emplace_back();
+        res.rows_.back().spo_id_.push_back(n1[i]);
+        res.rows_.back().spo_id_.push_back(n2[i]);
+        res.rows_.back().edge_id_.push_back(e[i]);
+        res.rows_.back().values_.emplace_back(v[i]);
+    }
+
+    std::vector<unsigned > n3 = {3, 2, 2, 4};
+    std::vector<GPStore::Value> v2 = {"123", "happy", "not happy", "456"};
+    PTempResult tb2;
+    tb2.head_.setVarset({2}, {}, {8}, {});
+    tb2.head_.initColumnInfoByVarset();
+    for(int i = 0; i <4;++i){
+        tb2.rows_.emplace_back();
+        tb2.rows_.back().spo_id_.push_back(n3[i]);
+        tb2.rows_.back().values_.emplace_back(v2[i]);
+    }
+    cout << "\n ========Print PTempResult: Table1 ========\n";
+    res.print();
+    cout << "\n ========Sort PTempResult: Table1 ========\n";
+    vector<unsigned >cols ={ 0, 1, 2};
+    res.sort(0, 4, cols);
+    cout << "\n ========Print PTempResult: Table1 ========\n\n";
+    res.print();
+    cout << "\n ========Print PTempResult: Table2 ========\n";
+    tb2.print();
+    cout << "\n ========Print PTempResult: Table1 JOIN Table2 ========\n";
+    auto tb3 = new PTempResult;
+    tb3->head_.setVarset({1,2} ,{3},{5,8},{});
+    res.doJoin(tb2, *tb3, {0}, {1});
+    tb3->print();
+    cout << "\n ========Print PTempResult: Table1 × Table2 ========\n";
+
+    auto tb4 = new PTempResult;
+    tb4->head_.setVarset({1,2}, {3},{5,8},{});
+    res.doCartesianProduct(tb2, *tb4);
+    tb4->print();
+    cout << "\n ========Print PTempResult: Table1 Left outer JOIN Table2 ========\n";
+    auto tb5 = new PTempResult;
+    tb5->head_.setVarset({1,2} ,{3},{5,8},{});
+    res.doLeftOuterJoin(tb2, *tb5, {0}, {1});
+    tb5->print();
+    cout << "\n ========Print PTempResult: Table2 Group By SPO(2) ========\n";
+    auto groups = tb2.doGroupBy({2});
+    tb2.print();
+    std::cout << "#Group: " << groups.size() << endl;
+    std::cout << "Group: ";
+    for(auto v : groups) cout << v<<" ";
+    std::cout << endl;
+    return 0;
+}
+
 ///* 测试十：计算器 */
 //int test10(){
 //    PCypherParser parser;
@@ -284,8 +321,8 @@ int test8(){
 
 int main(){
 
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8};//, test8, test9,    test10, test11
-    for(int i = 0; i < 8; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9};//, test8, test9,    test10, test11
+    for(int i = 0; i < 9; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {

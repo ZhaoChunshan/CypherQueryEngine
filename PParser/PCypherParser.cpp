@@ -626,7 +626,7 @@ antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionB
         if(!exp_tmp->covered_var_id_.empty()){
             throw std::runtime_error("[ERROR] Only Constant Expression allowed in limit.");
         }
-        auto v = PCalculator::evaluateConstExpression(exp_tmp.release(), *params_);
+        auto v = PCalculator::evaluateConstExpression(exp_tmp.release(), params_.get());
         if(v.type_ != GPStore::Value::INTEGER || v.data_.Int < 0){
             throw std::runtime_error("[ERROR] Only non-negative Integer allowed in limit.");
         }
@@ -637,7 +637,7 @@ antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionB
         if(!exp_tmp->covered_var_id_.empty()){
             throw std::runtime_error("[ERROR] Only Constant Expression allowed in skip.");
         }
-        auto v = PCalculator::evaluateConstExpression(exp_tmp.release(), *params_);
+        auto v = PCalculator::evaluateConstExpression(exp_tmp.release(), params_.get());
         if(v.type_ != GPStore::Value::INTEGER || v.data_.Int < 0){
             throw std::runtime_error("[ERROR] Only non-negative Integer allowed in skip.");
         }

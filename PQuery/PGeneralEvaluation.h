@@ -58,6 +58,7 @@ private:
 //    FILE* fp;
 //    bool export_flag;
 public:
+
     PGeneralEvaluation(KVstore *_kvstore, StringIndex *_stringindex, PStore * _pstore,
                        const std::shared_ptr<std::unordered_map<std::string, GPStore::Value>> & _param,
     TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub,
@@ -68,18 +69,20 @@ public:
     bool ParseCypherQuery(const std::string &_query);
     bool ParseCypherQuery(std::istream& in);
 
-
     bool GenerateLogicalPlan();
 
-    // Simulate Recursive Using a Stack.
-    // State: 0 Have not been done
-    // State: 1 Finished Left tree
-    // State: 2 Finished Left && right Tree, pop stack
-    // Nodes in the stack from bottom to top, is just a PATH from root to current node.
-    // Scan The nodes in the stack, and then we can do Candidate Passing
     bool DoQuery();
 
 private:
+    static const int NOT_DONE = 0, FINISH_LEFT = 1, FINISH_RIGHT = 2;
+    class EvaluationStackItem{
+    public:
+        int state_; // 0, 1, 2
+        PTempResult *result_;   // store left tree result
+        PTreeNode * node_;      // plan tree node
+        EvaluationStackItem():state_(0), result_(nullptr), node_(nullptr){}
+        EvaluationStackItem(PTreeNode * oprt_node, PTempResult * tmp_result, int state):node_(oprt_node),result_(tmp_result),state_(state){}
+    };
     /// helper functions for Stage3. doQuery.
 
 };
