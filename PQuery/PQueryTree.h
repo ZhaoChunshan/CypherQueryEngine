@@ -3,7 +3,7 @@
 #include <string>
 #include "../Value/Value.h"
 #include "../PParser/CypherAST.h"
-#include "../Util/util.h"
+#include "../Util/Util.h"
 
 /**
  * @brief Class PTreeNode: node of the PlanTree. Each PlanTree node has one or two children.

@@ -10,7 +10,7 @@
 #include "PQueryTree.h"
 #include "PTempResult.h"
 #include "../PParser/CypherAST.h"
-#include "../Util/util.h"
+#include "../Util/Util.h"
 
 
 /// TODO: handler transaction && kvstore, stringindex, PStore; we remove some vars from original GE.
@@ -78,7 +78,8 @@ private:
     class EvaluationStackItem{
     public:
         int state_; // 0, 1, 2
-        PTempResult *result_;   // store left tree result
+        std::unique_ptr<PTempResult> result_;   // store left tree result
+                                                // has ownership, so use unique_ptr
         PTreeNode * node_;      // plan tree node
         EvaluationStackItem():state_(0), result_(nullptr), node_(nullptr){}
         EvaluationStackItem(PTreeNode * oprt_node, PTempResult * tmp_result, int state):node_(oprt_node),result_(tmp_result),state_(state){}

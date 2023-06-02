@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <memory>
 #include "Pattern.h"
-#include "../Util/util.h"
+#include "../Util/Util.h"
 
 // CypherAST
 class CypherAST;

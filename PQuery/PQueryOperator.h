@@ -8,7 +8,7 @@
 #include "../PParser/Pattern.h"
 #include "PVarset.h"
 #include "../PParser/CypherAST.h"
-#include "../Util/util.h"
+#include "../Util/Util.h"
 
 
 /**
