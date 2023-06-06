@@ -24,4 +24,12 @@ typedef int StringIndex;
 typedef int Optimizer;
 typedef int AllEntityId;
 
+
+class Util {
+public:
+
+    static const char EDGE_IN = 'i';
+    static const char EDGE_OUT = 'o';
+    static const char EDGE_UNDIRECT = 'u';
+}
 #endif //CYPHERQUERYENGINE_UTIL_H
