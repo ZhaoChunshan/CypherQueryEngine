@@ -1,4 +1,28 @@
 # CypherQueryEngine
 A cypher query engine for propery graph database.
 
-g++ -o CypherQueryEngine  PParser/Cypher/CypherBaseListener.cpp PParser/Cypher/CypherBaseVisitor.cpp PParser/Cypher/CypherLexer.cpp PParser/Cypher/CypherListener.cpp PParser/Cypher/CypherParser.cpp PParser/Cypher/CypherVisitor.cpp PParser/Pattern.cpp PParser/CypherAST.cpp PParser/PCypherParser.cpp Value/Value.cpp  Value/Expression.cpp  PQuery/Varset.cpp test.cpp PParser/Cypher/CypherBaseListener.cpp -I PParser -I PQuery -I Value -I Tools/antlr4-cpp-runtime-4/runtime/src -I PParser/Cypher -L Tools/libantlr4-runtime.a
+
+## Usage
+
+### Execute A Query
+```cpp
+    std::shared_ptr<PGeneralEvaluation> ge = std::make_shared<PGeneralEvaluation>( ... );
+    ge->ParseCypherQuery(query);
+    ge->GenerateLogicalPlan();
+    ge->DoQuery();
+    ge->temp_result_->print();
+```
+
+### Generate Plan Tree For A Query
+```cpp
+    PCypherParser parser;
+    std::unique_ptr<CypherAST> ast;
+    std::unique_ptr<PTreeNode> plan;.
+    ast.reset( parser.CypherParse(query, param, nullptr));
+    plan.reset(PQueryTree::GenerateQueryTree(ast.get()));
+    plan.print();
+```
+
+## Warning
+Pattern Matching && Storage engine is NOT included in our work.
+
