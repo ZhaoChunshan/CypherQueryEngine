@@ -1,5 +1,5 @@
 
-#include "PBGPQuery.h"
+#include "BGPQuery.h"
 #include <algorithm>
 using namespace std;
 
@@ -9,7 +9,7 @@ using namespace std;
 // Constructor for PG Node Var Or Edge Var
 VarDescriptor::VarDescriptor(unsigned id, VarType var_type, const string &var_name, const std::vector<unsigned>& labels_or_types,
                              const std::vector<Expression*>& exps)
-        :id_(id), var_type_(var_type), var_name_(var_name),labels_or_types_(labels_or_types),exps_(exps)
+        :id_(id), var_type_(var_type), var_name_(var_name),labels_or_types_(labels_or_types),exps_(exps), selected_(false),degree_(0)
 {
 
 }
@@ -46,6 +46,7 @@ void BGPQueryNew::addVarDescriptor(shared_ptr<VarDescriptor>& var_desc_shared_pt
     position_id_map[index] = id;
     var_item_to_id[var_desc_shared_ptr->var_name_] = id;
     var_item_to_position[var_desc_shared_ptr->var_name_] = index;
+    item_to_freq[var_desc_shared_ptr->var_name_] = 0;
     if(var_desc_shared_ptr->var_type_ == VarDescriptor::VarType::Node){
         so_var_id.push_back(id);
         total_so_var_num++;
@@ -232,7 +233,8 @@ void VarDescriptor::print(KVstore *kvstore) {
             }
         }
 
-    } else{
+    }
+    else{
         EdgeVarDescriptor * edge = dynamic_cast<EdgeVarDescriptor*>(this);
         cout << "s_type_.size() = " << edge->s_type_.size() << endl;
         for(unsigned i = 0; i < edge->s_type_.size(); ++i){
@@ -250,6 +252,7 @@ void VarDescriptor::print(KVstore *kvstore) {
             }
         }
     }
+    std::cout << std::endl;
 }
 std::string VarDescriptor::GetString(VarType t) {
     // VarType{Entity, Predicate, NotDecided

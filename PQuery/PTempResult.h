@@ -27,6 +27,7 @@ public:
         Header(const Header & that);
         Header& operator=(const Header & that);
         ~Header() = default;
+        void clear();
         void initColumnInfoByVarset();
         void setVarset(const std::vector<unsigned > & spo_var, const std::vector<unsigned > & edge_var,
                        const std::vector<unsigned > & other_var,const std::vector<std::pair<unsigned,unsigned>> & prop);
@@ -52,7 +53,7 @@ public:
     ~PTempResult() = default;
 
     PVarset<unsigned > getAllVarset() const;
-
+    void clear();
     void print() const;
 
     static int compareRow(const Record& x, const std::vector<unsigned > & x_cols,

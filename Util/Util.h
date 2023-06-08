@@ -18,12 +18,16 @@ static const unsigned INVALID = 0xffffffffU;
 typedef int TYPE_PREDICATE_ID;
 
 typedef int Transaction;
-typedef int KVstore;
 typedef int PStore;
 typedef int StringIndex;
 typedef int Optimizer;
 typedef int AllEntityId;
 
+class KVstore{
+public:
+    TYPE_ENTITY_LITERAL_ID getIDByString(std::string _str){return 666;}
+    TYPE_PROPERTY_ID getpropIDBypropStr(const std::string &_propStr) const{return 2333;}
+};
 
 class Util {
 public:
@@ -31,5 +35,7 @@ public:
     static const char EDGE_IN = 'i';
     static const char EDGE_OUT = 'o';
     static const char EDGE_UNDIRECT = 'u';
-}
+};
+
+
 #endif //CYPHERQUERYENGINE_UTIL_H

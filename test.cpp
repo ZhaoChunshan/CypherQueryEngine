@@ -5,12 +5,15 @@
 
 #include "PTempResult.h"
 #include "PCalculator.h"
+#include "PGeneralEvaluation.h"
 #include <fstream>
 #include <memory>
 #include <algorithm>
 #include <iostream>
 using namespace std;
 std::shared_ptr< std::unordered_map<std::string, GPStore::Value>> param(new  std::unordered_map<std::string, GPStore::Value>);
+KVstore * kvstore = nullptr;
+StringIndex  * stringindex = nullptr;
 
 std::string QueryPath = "../Queries/";
 const char *s[]= {
@@ -283,6 +286,29 @@ int test9(){
     return 0;
 }
 
+/* 测试十：General Evaluation*/
+int test10(){
+    std::shared_ptr<PGeneralEvaluation> ge = std::make_shared<PGeneralEvaluation>(kvstore, stringindex, param, nullptr,
+                                                                                  nullptr, nullptr, 0, 0, 0, 0,
+                                                                                  nullptr);
+    for(int i = 1; i <= 6; ++i){
+        std::ifstream fin("../TestQuery/test" + std::to_string(i) + ".cypher");
+//        std::string query2 = "UNWIND [{age:10}, {age:120}] AS dict RETURN dict['age']",
+//                query3 = "WITH 1 AS a WITH a, 1 AS b RETURN a + b ",
+//                query4 = "WITH 1 AS a RETURN a + 1",
+//                query5 = "MATCH (a) RETURN a as b ",
+//                query6 = "MATCH (a) MATCH (b) CREATE (a)-[:LIKES]->(b)";
+        ge->ParseCypherQuery(fin);
+        ge->GenerateLogicalPlan();
+        for(int i = 0; i <ge->id2var_name_->size(); ++i){
+            std::printf("%5d  %s\n", i, ge->id2var_name_->at(i).c_str());
+        }
+        ge->DoQuery();
+        ge->temp_result_->print();
+    }
+
+    return 0;
+}
 ///* 测试十：计算器 */
 //int test10(){
 //    PCypherParser parser;
@@ -321,8 +347,8 @@ int test9(){
 
 int main(){
 
-    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9};//, test8, test9,    test10, test11
-    for(int i = 0; i < 9; ++i){
+    int (*a[])()  = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10};
+    for(int i = 0; i < 10; ++i){
         cout << "Run test " << i + 1 <<"...\t\t\t";
         int code;
         if((code = a[i]())) {
@@ -334,5 +360,7 @@ int main(){
         }
         cout <<endl;
     }
+
     return 0;
 }
+

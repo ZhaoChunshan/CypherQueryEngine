@@ -11,7 +11,7 @@
   + ExistentialSubquery
   + ListComprehension
   + PatternPredicate
-+ 
++ 不支持对pattern命名，如p = ((a)-[]-(c))
 
 ## Usage
 
@@ -26,4 +26,22 @@
 ```
 
 ### Execute A Query
-To be implemented.
+```cpp
+    std::shared_ptr<PGeneralEvaluation> ge = std::make_shared<PGeneralEvaluation>( ... );
+    ge->ParseCypherQuery(query);
+    ge->GenerateLogicalPlan();
+    ge->DoQuery();
+    ge->temp_result_->print();
+```
+
+## Attention
+Where will we access KVstore ?
++ Parser: encode property key name to its id.
++ Calculator: Check existence of Labels && Get node/edge properties.
++ GeneralEvaluation: Of course GE will access KVStore, see CREATE, DELETE, SET, REMOVE, etc.
+
+Moreover, remember to call Optimizer/Executor in BGP of GE.
+
+## Questions
++ How can I get all labels of a node? `getObjlListBysubIDpreID` don't tell me #label returned.
++ 

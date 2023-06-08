@@ -1,0 +1,1 @@
+RETURN 1 + 2 + toInteger("3") * 4

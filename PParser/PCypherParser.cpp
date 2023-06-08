@@ -325,8 +325,8 @@ antlrcpp::Any PCypherParser::visitOC_Unwind(CypherParser::OC_UnwindContext *ctx)
     if(sym_tb_.exists(unwind->var_name_)){
         throw std::runtime_error("[ERROR] Variable `" + unwind->var_name_ + "` already declared.");
     }
-
-    sym_tb_.insert(unwind->var_name_ ,CypherSymbol::VALUE_VAR, sym_tb_.getNextVarId());
+    unwind->var_id_ = sym_tb_.getNextVarId();
+    sym_tb_.insert(unwind->var_name_ ,CypherSymbol::VALUE_VAR, unwind->var_id_);
     sym_tb_.putString(unwind->var_name_);
     return unwind.release();
 }
@@ -608,7 +608,7 @@ antlrcpp::Any PCypherParser::visitOC_ProjectionBody(CypherParser::OC_ProjectionB
     PVarset<unsigned> order_var;
     if(ctx->oC_Order()){
         for(auto sort_ctx : ctx->oC_Order()->oC_SortItem()){
-            with_return->ascending_.push_back(sort_ctx->ASC() != nullptr || sort_ctx->ASCENDING()!=nullptr);
+            with_return->ascending_.push_back(!(sort_ctx->DESC() != nullptr || sort_ctx->DESCENDING()!=nullptr));
             with_return->order_by_.emplace_back(visitOC_Expression(sort_ctx->oC_Expression()).as<GPStore::Expression*>());
             order_var += with_return->order_by_.back()->covered_var_id_;
         }
@@ -1827,6 +1827,7 @@ unsigned SymbolTableStack::getPropId(const std::string &prop){
         // We use fake id now.
         kvstore_;
         unsigned new_id = next_prop_id_++;  // TODO: PStore::prop2id(prop)
+        new_id = kvstore_->getpropIDBypropStr(prop);
         if(new_id != INVALID_PROPERTY_ID){
             prop2id_.insert(std::make_pair(prop, new_id));
             prop_id2string_.insert(std::make_pair(new_id, prop));

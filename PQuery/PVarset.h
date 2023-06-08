@@ -91,7 +91,7 @@ class PVarset
             if(this == &_varset) return *this;
             vars.clear();
             for(auto & v : _varset.vars)
-                vars.push_back(v);
+                vars.emplace_back(v);
             return *this;
         }
 

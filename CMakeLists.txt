@@ -17,19 +17,21 @@ set(SOURCES
 		PParser/Cypher/CypherListener.cpp
 		PParser/Cypher/CypherParser.cpp
 		PParser/Cypher/CypherVisitor.cpp
-		Value/Value.cpp
-		Value/Expression.cpp
-		Value/PCalculator.cpp
 		PParser/Pattern.cpp
 		PParser/CypherAST.cpp
 		PParser/PCypherParser.cpp
+
+		Value/Value.cpp
+		Value/Expression.cpp
+		Value/PCalculator.cpp
+
 		PQuery/PQueryOperator.cpp
+		PQuery/BGPQuery.cpp
 		PQuery/PQueryTree.cpp
 		PQuery/PTempResult.cpp
 		PQuery/PGeneralEvaluation.cpp
 		test.cpp
-
-        PQuery/PBGPQuery.cpp PQuery/PBGPQuery.h)
+		Optimizer/Query.h)
 # Add an executable with the above sources
 add_executable(${PROJECT_NAME} ${SOURCES})
 

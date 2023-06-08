@@ -202,6 +202,7 @@ BGPOperator * PQueryTree::GetBGPFromMatch(const MatchAST * match){
         }
     }
     /// handle edge conflict
+    std::sort(edges.vars.begin(), edges.vars.end());
     unsigned edge_cnt = edges.getVarsetSize();
     for(unsigned  i = 0; i < edge_cnt; ++i){
         for(unsigned  j = i + 1; j < edge_cnt; ++j){
@@ -335,7 +336,8 @@ PTreeNode * PQueryTree::GetQueryTree(const WithReturnAST* with_return, PTreeNode
             new_tree->left_ = tree;
             tree = new_tree.release();
         }
-    } else {
+    }
+    else {
         group.reset(new GroupByOperator);
         aggr.reset(new AggregationOperator);
         for(int i = 0; i < n; ++i){
@@ -544,8 +546,10 @@ void PQueryTree::ClipVarset(PTreeNode * tree, const PVarset<unsigned> & required
                 proj_op->proj_exps_[i].reset(nullptr);
             }
         }
-        proj_op->proj_exps_.swap(new_exp);
-        proj_op->var_id_.swap(new_id);
+        if(!new_exp.empty()) {
+            proj_op->proj_exps_.swap(new_exp);
+            proj_op->var_id_.swap(new_id);
+        }
         tree->operator_.reset(proj_op);
         if(tree->left_ != nullptr){
             ClipVarset(tree->left_, this_required + required);
@@ -924,7 +928,7 @@ PTreeNode * PQueryTree::SplitBGPByConnectedComponent(BGPOperator *bgp, PTreeNode
             // duplicated single node
             if(conn->pattern_.empty() || (conn->pattern_.size() == 1 && conn->pattern_[0]->nodes_.size() == 1
             && conn->pattern_[0]->nodes_[0]->constraintEmpty())){
-                conn.release();
+                conn.reset(nullptr);
                 continue;
             }
             // This BGP has pattern, edge conflict.

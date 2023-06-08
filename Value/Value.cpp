@@ -18,7 +18,7 @@ GPStore::Value::Value(Type _type_):type_(_type_){
     } else if(_type_ == PATH){
         data_.Path = new PathContent();
     }else if(_type_ == LIST){
-        data_.List = new vector<Value *>();
+        data_.List = new vector<Value*>;
     }else if(_type_ == MAP){
         data_.Map = new map<std::string, Value *>();
     }
@@ -353,6 +353,8 @@ GPStore::uint_64 GPStore::Value::size(){
 }
 
 std::string GPStore::Value::toString() const {
+    std::stringstream  buf;
+    bool first = true;
     switch (type_)
     {
         case GPStore::Value::INTEGER:
@@ -370,9 +372,25 @@ std::string GPStore::Value::toString() const {
         case GPStore::Value::PATH:
             return "PATH";
         case GPStore::Value::LIST:
-            return "LIST";
+            buf << "[";
+            first = true;
+            for(auto v : *data_.List){
+                if(!first){buf << ", ";}
+                else first = false;
+                buf << v->toString();
+            }
+            buf << "]";
+            return buf.str();
         case GPStore::Value::MAP:
-            return "<MAP>";
+            buf << "{";
+            first = true;
+            for(auto & p : *data_.Map){
+                if(!first){buf << ", ";}
+                else first = false;
+                buf << p.first << ": " << p.second->toString();
+            }
+            buf << "}";
+            return buf.str();
         case GPStore::Value::NO_VALUE:
             return "null";
     }

@@ -1,3 +1,6 @@
+#ifndef PQUERY_PQUERYTREE_H
+#define PQUERY_PQUERYTREE_H
+
 #include "PQueryOperator.h"
 #include <unordered_map>
 #include <string>
@@ -105,3 +108,5 @@ private:
         ptr_vec.swap(new_vec);
     }
 };
+
+#endif

@@ -1,0 +1,1 @@
+MATCH (n:Person)-[:KNOWS]->(m:Person) RETURN n,m

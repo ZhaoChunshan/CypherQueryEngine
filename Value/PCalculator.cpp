@@ -454,7 +454,7 @@ PCalculator::evaluateAtom(
 ){
     switch (atom->atom_type_) {
         case GPStore::Atom::LITERAL:
-            return evaluateLiteral(dynamic_cast<const GPStore::Literal *>(atom),spo_embeddings, spo_id2col,edge_embeddings,
+            return evaluateLiteral((const GPStore::Literal *)(atom),spo_embeddings, spo_id2col,edge_embeddings,
                                    edge_id2col,value_embeddings,value_id2col,var_prop_id2col,params,_kvstore);
 
         case GPStore::Atom::PARAMETER:
@@ -773,7 +773,8 @@ PCalculator::evaluatePropertyOrMapKey(const GPStore::Value & x, const std::vecto
             if(it == val->data_.Map->end()) return GPStore::Value::NO_VALUE;
             val = it->second;
         } else {
-            unsigned key_id = (unsigned ) rand()% 10000; // todo: Call _kvstore here.
+            unsigned key_id =  10000; // todo: Call _kvstore here.
+            key_id = _kvstore->getpropIDBypropStr(k);
             if(key_id == 0xffffffffU) return GPStore::Value::NO_VALUE;
             if(val->type_ == GPStore::Value::NODE){
                 unsigned  nid = val->data_.Node;

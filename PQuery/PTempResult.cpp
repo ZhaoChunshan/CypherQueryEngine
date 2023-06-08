@@ -24,6 +24,17 @@ PTempResult::Header& PTempResult::Header::operator=(const Header &that) {
     return *this;
 }
 
+void PTempResult::Header::clear(){
+    spo_var_.vars.clear();
+    edge_var_.vars.clear();
+    other_var_.vars.clear();
+    prop_.vars.clear();
+    spo_var_id2col_.clear();
+    edge_var_id2col_.clear();
+    value_var_id2col_.clear();
+    var_propid2col_.clear();
+}
+
 void PTempResult::Header::initColumnInfoByVarset(){
     spo_var_id2col_.clear();
     edge_var_id2col_.clear();
@@ -82,6 +93,11 @@ PTempResult& PTempResult::operator=(const PTempResult& that){
 
 PVarset<unsigned > PTempResult::getAllVarset() const{
     return head_.spo_var_ + head_.edge_var_ + head_.other_var_;
+}
+
+void PTempResult::clear(){
+    head_.clear();
+    rows_.clear();
 }
 
 void PTempResult::print() const{
@@ -555,6 +571,7 @@ void PTempResult::doProjection(const std::vector<const GPStore::Expression *> & 
         head_.edge_var_ = edge_ + (head_.edge_var_ * keep);
         head_.other_var_ = value_ + (head_.other_var_ * keep);
         head_.initColumnInfoByVarset();
+        return;
     }
     /// both col and row of this table is not empty.
     /// Remember: We do lazy projection
@@ -812,8 +829,8 @@ void PTempResult::doAggregation(PTempResult &r, const std::vector<unsigned > & g
          generateRow(r.rows_.back(), rows_[lb], r_spo2this_col, r_edge2this_col, r_val2this_col, r_prop2this_col);
          std::vector<GPStore::Value> values;
          for(int j = 0; j < copy_exp.size(); ++j){
-             evaluateAggregationExpression(copy_exp[i].get(), lb , lr, _kvstore, params);
-             r.rows_.back().values_[r.head_.value_var_id2col_.at(aggr_id[j])] =PCalculator::evaluateExpression(copy_exp[i].get(), rows_[lb].spo_id_, head_.spo_var_id2col_,
+             evaluateAggregationExpression(copy_exp[j].get(), lb , lr, _kvstore, params);
+             r.rows_.back().values_[r.head_.value_var_id2col_.at(aggr_id[j])] =PCalculator::evaluateExpression(copy_exp[j].get(), rows_[lb].spo_id_, head_.spo_var_id2col_,
                                                                  rows_[lb].edge_id_, head_.edge_var_id2col_, rows_[lb].values_,
                                                                  head_.value_var_id2col_, head_.var_propid2col_, params,
                                                                  _kvstore);
