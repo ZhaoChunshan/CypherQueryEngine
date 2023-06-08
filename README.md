@@ -1,5 +1,5 @@
 # CypherQueryEngine
-A cypher query engine for propery graph database.
+A cypher query engine for property graph database.
 
 
 ## Usage
@@ -20,7 +20,7 @@ A cypher query engine for propery graph database.
     std::unique_ptr<PTreeNode> plan;.
     ast.reset( parser.CypherParse(query, param, nullptr));
     plan.reset(PQueryTree::GenerateQueryTree(ast.get()));
-    plan.print();
+    plan->print();
 ```
 
 ## Warning
