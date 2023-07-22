@@ -114,14 +114,34 @@ PTreeNode * PQueryTree::GetQueryTree(const QueryUnitAST * query_unit, PTreeNode 
             BGPOperator *total_bgp = MergeBGP(bgps);
             // now we only need to consider join tree && total_bgp
             tree = SplitBGPByConnectedComponent(total_bgp, tree);
+            delete total_bgp;
             i = j - 1; // iter i to j - 1, then j
         } else if(read->reading_form_ == ReadingAST::MATCH){
             // do optional match
             MatchAST * match = dynamic_cast<MatchAST*>(read.get());
             auto bgp = GetBGPFromMatch(match);
+
+            std::vector<GPStore::Expression *> remain_exps;
+            std::vector<std::unique_ptr<GPStore::Expression>> can_do;
+
+            for(auto & exp : bgp->filters_){
+                if(exp->covered_var_id_.belongTo(bgp->maximal_varset_)){
+                    can_do.emplace_back(exp.release());
+                }else {
+                    remain_exps.emplace_back(exp.release());
+                }
+            }
+
+            bgp->filters_.swap(can_do);
+
             auto right = SplitBGPByConnectedComponent(bgp, nullptr);
 
             tree = GenerateBinaryOperator(tree ,right, PQueryOperator::OPTIONAL);
+
+            if(!remain_exps.empty()){
+                tree = GenerateRelatedFilters(remain_exps, tree);
+            }
+
         } else if( read->reading_form_ == ReadingAST::UNWIND){
             tree = GetQueryTree(dynamic_cast<UnwindAST *>(read.get()), tree);
         } else if( read->reading_form_ == ReadingAST::INQUERY_CALL){
